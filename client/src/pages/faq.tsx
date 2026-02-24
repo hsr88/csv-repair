@@ -1,5 +1,5 @@
 import { HelpCircle, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader, PageFooter } from "@/components/navigation";
 
 interface FAQItem {
@@ -100,6 +100,11 @@ function FAQAccordion({ item }: { item: FAQItem }) {
 }
 
 export default function FAQPage() {
+  useEffect(() => {
+    document.title = "FAQ - csv.repair | CSV Repair Tool Help & Support";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Frequently asked questions about csv.repair. Learn about file size limits, SQL queries, auto-repair, keyboard shortcuts, repair templates, and more.");
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageHeader />

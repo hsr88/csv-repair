@@ -1,7 +1,13 @@
+import { useEffect } from "react";
 import { FileSpreadsheet, Heart } from "lucide-react";
 import { PageHeader, PageFooter } from "@/components/navigation";
 
 export default function AboutPage() {
+  useEffect(() => {
+    document.title = "About csv.repair - Free Online CSV File Repair Tool";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Learn about csv.repair, a free browser-based tool for analyzing, querying, and repairing broken or oversized CSV files. No upload needed — your data stays private.");
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageHeader />

@@ -1,7 +1,13 @@
+import { useEffect } from "react";
 import { Shield } from "lucide-react";
 import { PageHeader, PageFooter } from "@/components/navigation";
 
 export default function PrivacyPolicyPage() {
+  useEffect(() => {
+    document.title = "Privacy Policy - csv.repair | CSV Repair Tool";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Privacy policy for csv.repair. All CSV processing happens locally in your browser. Your files are never uploaded to any server.");
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageHeader />

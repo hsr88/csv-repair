@@ -1402,6 +1402,11 @@ export default function CsvRepairPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    document.title = "csv.repair - Fix Broken CSV Files Online Free | CSV Repair Tool";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Free online CSV repair tool. Fix broken, malformed, or oversized CSV files directly in your browser. Edit cells inline, run SQL queries, auto-repair errors, remove duplicates, and export clean data.");
+  }, []);
+
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
