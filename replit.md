@@ -1,13 +1,13 @@
 # csv.repair
 
 ## Overview
-A client-side tool for analyzing, querying, and fixing massive, broken CSV files. Built with React, Tailwind CSS (dark theme), PapaParse for CSV parsing, and AlaSQL for SQL queries.
+A client-side tool for analyzing, querying, and fixing massive, broken CSV files. Built with React, Tailwind CSS, PapaParse for CSV parsing, and AlaSQL for SQL queries.
 
 ## Architecture
 - **Frontend-only**: No backend API needed. All processing happens in the browser.
 - **Stack**: React + TypeScript + Tailwind CSS + Vite
 - **Libraries**: PapaParse (CSV parsing with web workers), AlaSQL (SQL queries on data)
-- **Theme**: Dark-first (slate-950/900 base, blue-600 accents)
+- **Theme**: Dark/Light mode with CSS variable system. Default dark. Toggle via navigation menu. Preference stored in localStorage.
 
 ## Key Features
 - File upload & parsing with PapaParse (worker-based for large files)
@@ -26,10 +26,23 @@ A client-side tool for analyzing, querying, and fixing massive, broken CSV files
 - SQL query execution via AlaSQL
 - Health check diagnostics showing parse errors
 - CSV export of repaired data
+- Dark/Light theme toggle
+- Responsive navigation with hamburger menu on mobile
+
+## Pages
+- `/` - Main CSV repair tool
+- `/about` - About page describing the tool
+- `/faq` - Frequently Asked Questions with accordion
+- `/privacy` - Privacy Policy (Google Analytics, GitHub contact)
 
 ## Project Structure
 - `client/src/pages/csv-repair.tsx` - Main application page (all components)
-- `client/src/App.tsx` - Router setup
+- `client/src/pages/about.tsx` - About page
+- `client/src/pages/faq.tsx` - FAQ page
+- `client/src/pages/privacy-policy.tsx` - Privacy Policy page
+- `client/src/components/theme-provider.tsx` - ThemeProvider with dark/light toggle
+- `client/src/components/navigation.tsx` - Responsive navigation (hamburger on mobile, inline on desktop)
+- `client/src/App.tsx` - Router setup with ThemeProvider
 - `client/index.html` - HTML entry with dark class and OG meta tags
 
 ## Running

@@ -33,6 +33,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Navigation } from "@/components/navigation";
+import { Link } from "wouter";
 
 type TabType = "editor" | "sql" | "health";
 type SortDir = "asc" | "desc" | null;
@@ -218,14 +220,14 @@ function VirtualTable({
   );
 
   return (
-    <div className="flex flex-col h-full rounded-md border border-slate-700 overflow-hidden">
+    <div className="flex flex-col h-full rounded-md border border-border overflow-hidden">
       <div
         ref={headerRef}
-        className="flex-shrink-0 overflow-hidden bg-slate-900 border-b border-slate-700"
+        className="flex-shrink-0 overflow-hidden bg-card border-b border-border"
       >
         <div className="flex" style={{ width: `${totalWidth + 60}px` }}>
           <div
-            className="flex-shrink-0 flex items-center justify-center text-xs font-medium text-slate-400 bg-slate-900 border-r border-slate-700"
+            className="flex-shrink-0 flex items-center justify-center text-xs font-medium text-muted-foreground bg-card border-r border-border"
             style={{ width: 60, height: ROW_HEIGHT }}
             data-testid="header-row-num"
           >
@@ -234,7 +236,7 @@ function VirtualTable({
           {headers.map((h) => (
             <div
               key={h}
-              className="flex-shrink-0 flex items-center justify-between px-2 text-xs font-semibold text-slate-200 uppercase tracking-wider border-r border-slate-700 group"
+              className="flex-shrink-0 flex items-center justify-between px-2 text-xs font-semibold text-foreground uppercase tracking-wider border-r border-border group"
               style={{ width: COL_WIDTH, height: ROW_HEIGHT }}
               title={h}
               data-testid={`header-col-${h}`}
@@ -244,7 +246,7 @@ function VirtualTable({
                 {onSort && (
                   <button
                     onClick={() => onSort(h)}
-                    className="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200"
+                    className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
                     data-testid={`sort-${h}`}
                   >
                     {sortCol === h && sortDir === "asc" ? (
@@ -259,7 +261,7 @@ function VirtualTable({
                 {onColumnStats && (
                   <button
                     onClick={() => onColumnStats(h)}
-                    className="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200"
+                    className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
                     data-testid={`stats-${h}`}
                   >
                     <BarChart3 className="w-3 h-3" />
@@ -273,7 +275,7 @@ function VirtualTable({
 
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto bg-slate-950"
+        className="flex-1 overflow-auto bg-background"
         onScroll={handleScroll}
         data-testid="virtual-table-body"
       >
@@ -287,7 +289,7 @@ function VirtualTable({
                 className={`flex absolute left-0 right-0 border-b transition-colors ${
                   isErrorRow
                     ? "border-red-900/50 bg-red-950/20 hover:bg-red-950/30"
-                    : "border-slate-800 hover:bg-slate-800/50"
+                    : "border-border hover:bg-muted/50"
                 }`}
                 style={{ top: `${actualIndex * ROW_HEIGHT}px`, height: `${ROW_HEIGHT}px` }}
                 data-testid={`row-${actualIndex}`}
@@ -296,7 +298,7 @@ function VirtualTable({
                   className={`flex-shrink-0 flex items-center justify-center text-xs font-mono border-r ${
                     isErrorRow
                       ? "text-red-400 bg-red-950/30 border-red-900/50"
-                      : "text-slate-500 bg-slate-900/50 border-slate-800"
+                      : "text-muted-foreground bg-card/50 border-border"
                   }`}
                   style={{ width: 60 }}
                 >
@@ -313,8 +315,8 @@ function VirtualTable({
                         isHighlighted
                           ? "bg-yellow-900/30 text-yellow-200 border-yellow-800/30"
                           : isErrorRow
-                          ? "border-red-900/30 text-slate-300"
-                          : "border-slate-800 text-slate-300"
+                          ? "border-red-900/30 text-muted-foreground"
+                          : "border-border text-muted-foreground"
                       }`}
                       style={{ width: COL_WIDTH }}
                       onDoubleClick={() => handleDoubleClick(actualIndex, h)}
@@ -359,16 +361,16 @@ function EmptyState({ onLoadFile, isDragging }: { onLoadFile: () => void; isDrag
         <div className={`relative border rounded-2xl p-8 transition-colors ${
           isDragging
             ? "bg-blue-900/30 border-blue-500 border-dashed"
-            : "bg-slate-800/80 border-slate-700"
+            : "bg-muted/80 border-border"
         }`}>
           <FileSpreadsheet className={`w-16 h-16 mx-auto ${isDragging ? "text-blue-300" : "text-blue-400"}`} />
         </div>
       </div>
       <div className="space-y-2 max-w-md">
-        <h2 className="text-2xl font-bold text-slate-100">
+        <h2 className="text-2xl font-bold text-foreground">
           {isDragging ? "Drop your CSV here" : "No CSV Loaded"}
         </h2>
-        <p className="text-slate-400 text-sm leading-relaxed">
+        <p className="text-muted-foreground text-sm leading-relaxed">
           {isDragging
             ? "Release to start analyzing your file"
             : "Load or drag & drop a CSV file to start analyzing, querying, and repairing your data."}
@@ -381,17 +383,17 @@ function EmptyState({ onLoadFile, isDragging }: { onLoadFile: () => void; isDrag
             Load CSV File
           </Button>
           <div className="grid grid-cols-3 gap-4 mt-4 max-w-lg">
-            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-800/40 border border-slate-700/50">
+            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/40 border border-border/50">
               <Table2 className="w-5 h-5 text-blue-400" />
-              <span className="text-xs text-slate-400 text-center">Edit cells inline</span>
+              <span className="text-xs text-muted-foreground text-center">Edit cells inline</span>
             </div>
-            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-800/40 border border-slate-700/50">
+            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/40 border border-border/50">
               <Terminal className="w-5 h-5 text-emerald-400" />
-              <span className="text-xs text-slate-400 text-center">Run SQL queries</span>
+              <span className="text-xs text-muted-foreground text-center">Run SQL queries</span>
             </div>
-            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-800/40 border border-slate-700/50">
+            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/40 border border-border/50">
               <HeartPulse className="w-5 h-5 text-rose-400" />
-              <span className="text-xs text-slate-400 text-center">Health diagnostics</span>
+              <span className="text-xs text-muted-foreground text-center">Health diagnostics</span>
             </div>
           </div>
         </>
@@ -402,13 +404,13 @@ function EmptyState({ onLoadFile, isDragging }: { onLoadFile: () => void; isDrag
 
 function LoadingOverlay({ fileName }: { fileName: string }) {
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6" data-testid="loading-overlay">
+    <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6" data-testid="loading-overlay">
       <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
       <div className="text-center space-y-2">
-        <p className="text-lg font-semibold text-slate-100">Parsing CSV</p>
-        <p className="text-sm text-slate-400 truncate max-w-xs">{fileName}</p>
+        <p className="text-lg font-semibold text-foreground">Parsing CSV</p>
+        <p className="text-sm text-muted-foreground truncate max-w-xs">{fileName}</p>
       </div>
-      <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+      <div className="w-64 h-1.5 bg-muted rounded-full overflow-hidden">
         <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: "70%" }} />
       </div>
     </div>
@@ -435,25 +437,25 @@ function SearchReplaceBar({
   onClose: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border-b border-slate-700" data-testid="search-replace-bar">
-      <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+    <div className="flex items-center gap-2 px-4 py-2 bg-card border-b border-border" data-testid="search-replace-bar">
+      <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       <input
-        className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 w-44 focus:outline-none focus:border-blue-500"
+        className="bg-muted border border-border rounded px-2 py-1 text-sm text-foreground w-44 focus:outline-none focus:border-blue-500"
         placeholder="Search..."
         value={searchState.query}
         onChange={(e) => onSearchChange(e.target.value)}
         autoFocus
         data-testid="input-search"
       />
-      <Replace className="w-4 h-4 text-slate-400 flex-shrink-0" />
+      <Replace className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       <input
-        className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200 w-44 focus:outline-none focus:border-blue-500"
+        className="bg-muted border border-border rounded px-2 py-1 text-sm text-foreground w-44 focus:outline-none focus:border-blue-500"
         placeholder="Replace..."
         value={searchState.replacement}
         onChange={(e) => onReplacementChange(e.target.value)}
         data-testid="input-replace"
       />
-      <span className="text-xs text-slate-500 min-w-[60px] text-center">
+      <span className="text-xs text-muted-foreground min-w-[60px] text-center">
         {searchState.matchCount > 0
           ? `${searchState.currentMatch + 1}/${searchState.matchCount}`
           : searchState.query
@@ -472,7 +474,7 @@ function SearchReplaceBar({
       <Button variant="secondary" size="sm" onClick={onReplaceAll} disabled={searchState.matchCount === 0} data-testid="button-replace-all">
         All
       </Button>
-      <button onClick={onClose} className="p-1 rounded hover:bg-slate-700 text-slate-400" data-testid="button-close-search">
+      <button onClick={onClose} className="p-1 rounded hover:bg-accent text-muted-foreground" data-testid="button-close-search">
         <X className="w-4 h-4" />
       </button>
     </div>
@@ -481,54 +483,54 @@ function SearchReplaceBar({
 
 function ColumnStatsPanel({ stats, onClose }: { stats: ColumnStats; onClose: () => void }) {
   return (
-    <div className="absolute right-4 top-14 z-30 w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-4 space-y-3" data-testid="column-stats-panel">
+    <div className="absolute right-4 top-14 z-30 w-72 bg-card border border-border rounded-lg shadow-xl p-4 space-y-3" data-testid="column-stats-panel">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-200 truncate flex-1">{stats.header}</h3>
-        <button onClick={onClose} className="p-1 rounded hover:bg-slate-700 text-slate-400">
+        <h3 className="text-sm font-semibold text-foreground truncate flex-1">{stats.header}</h3>
+        <button onClick={onClose} className="p-1 rounded hover:bg-accent text-muted-foreground">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-          <p className="text-slate-500">Total</p>
-          <p className="font-mono text-slate-200">{stats.totalCount.toLocaleString()}</p>
+        <div className="p-2 rounded bg-muted/60 border border-border/50">
+          <p className="text-muted-foreground">Total</p>
+          <p className="font-mono text-foreground">{stats.totalCount.toLocaleString()}</p>
         </div>
-        <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-          <p className="text-slate-500">Unique</p>
-          <p className="font-mono text-slate-200">{stats.uniqueCount.toLocaleString()}</p>
+        <div className="p-2 rounded bg-muted/60 border border-border/50">
+          <p className="text-muted-foreground">Unique</p>
+          <p className="font-mono text-foreground">{stats.uniqueCount.toLocaleString()}</p>
         </div>
-        <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-          <p className="text-slate-500">Empty</p>
-          <p className={`font-mono ${stats.emptyCount > 0 ? "text-amber-400" : "text-slate-200"}`}>{stats.emptyCount.toLocaleString()}</p>
+        <div className="p-2 rounded bg-muted/60 border border-border/50">
+          <p className="text-muted-foreground">Empty</p>
+          <p className={`font-mono ${stats.emptyCount > 0 ? "text-amber-400" : "text-foreground"}`}>{stats.emptyCount.toLocaleString()}</p>
         </div>
-        <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-          <p className="text-slate-500">Type</p>
-          <p className="font-mono text-slate-200">{stats.isNumeric ? "Numeric" : "Text"}</p>
+        <div className="p-2 rounded bg-muted/60 border border-border/50">
+          <p className="text-muted-foreground">Type</p>
+          <p className="font-mono text-foreground">{stats.isNumeric ? "Numeric" : "Text"}</p>
         </div>
       </div>
       {stats.isNumeric && (
         <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-            <p className="text-slate-500">Min</p>
-            <p className="font-mono text-slate-200">{stats.min?.toLocaleString()}</p>
+          <div className="p-2 rounded bg-muted/60 border border-border/50">
+            <p className="text-muted-foreground">Min</p>
+            <p className="font-mono text-foreground">{stats.min?.toLocaleString()}</p>
           </div>
-          <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-            <p className="text-slate-500">Max</p>
-            <p className="font-mono text-slate-200">{stats.max?.toLocaleString()}</p>
+          <div className="p-2 rounded bg-muted/60 border border-border/50">
+            <p className="text-muted-foreground">Max</p>
+            <p className="font-mono text-foreground">{stats.max?.toLocaleString()}</p>
           </div>
-          <div className="p-2 rounded bg-slate-800/60 border border-slate-700/50">
-            <p className="text-slate-500">Avg</p>
-            <p className="font-mono text-slate-200">{stats.avg?.toFixed(2)}</p>
+          <div className="p-2 rounded bg-muted/60 border border-border/50">
+            <p className="text-muted-foreground">Avg</p>
+            <p className="font-mono text-foreground">{stats.avg?.toFixed(2)}</p>
           </div>
         </div>
       )}
       {stats.topValues.length > 0 && (
         <div className="space-y-1">
-          <p className="text-xs text-slate-500">Top values</p>
+          <p className="text-xs text-muted-foreground">Top values</p>
           {stats.topValues.map((tv, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-slate-300 truncate flex-1 mr-2">{tv.value || "(empty)"}</span>
-              <span className="text-slate-500 font-mono">{tv.count}</span>
+              <span className="text-muted-foreground truncate flex-1 mr-2">{tv.value || "(empty)"}</span>
+              <span className="text-muted-foreground font-mono">{tv.count}</span>
             </div>
           ))}
         </div>
@@ -576,19 +578,19 @@ function ContextMenu({
 
   return (
     <div
-      className="fixed z-50 bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 min-w-[180px]"
+      className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]"
       style={{ left: x, top: y }}
       data-testid="context-menu"
     >
       {menuItems.map((item, i) =>
         "type" in item ? (
-          <div key={i} className="h-px bg-slate-700 my-1" />
+          <div key={i} className="h-px bg-border my-1" />
         ) : (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); item.action(); onClose(); }}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-800 transition-colors ${
-              item.danger ? "text-red-400" : "text-slate-300"
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted transition-colors ${
+              item.danger ? "text-red-400" : "text-muted-foreground"
             }`}
             data-testid={item.testId}
           >
@@ -629,17 +631,17 @@ function DiffPreview({
   const addedCols = new Set<string>();
 
   return (
-    <div className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="diff-preview">
-      <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+    <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="diff-preview">
+      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <GitCompare className="w-4 h-4 text-blue-400" />
-            <h3 className="text-sm font-semibold text-slate-200">Changes Preview</h3>
+            <h3 className="text-sm font-semibold text-foreground">Changes Preview</h3>
             <Badge variant="secondary" className="no-default-active-elevate text-xs">
               {changes.length} change{changes.length !== 1 ? "s" : ""}
             </Badge>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-slate-700 text-slate-400">
+          <button onClick={onClose} className="p-1 rounded hover:bg-accent text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -647,22 +649,22 @@ function DiffPreview({
           {changes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-              <p className="text-sm text-slate-400">No changes detected</p>
+              <p className="text-sm text-muted-foreground">No changes detected</p>
             </div>
           ) : (
             <div className="space-y-1.5">
               {changes.slice(0, 200).map((c, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs p-2 bg-slate-800/50 rounded-md">
-                  <span className="text-slate-500 font-mono flex-shrink-0 w-20 text-right">
+                <div key={i} className="flex items-start gap-2 text-xs p-2 bg-muted/50 rounded-md">
+                  <span className="text-muted-foreground font-mono flex-shrink-0 w-20 text-right">
                     R{c.row + 1}:{c.col}
                   </span>
                   <span className="text-red-400 line-through truncate flex-1">{c.oldVal || "(empty)"}</span>
-                  <ChevronRight className="w-3 h-3 text-slate-600 flex-shrink-0" />
+                  <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                   <span className="text-emerald-400 truncate flex-1">{c.newVal || "(empty)"}</span>
                 </div>
               ))}
               {changes.length > 200 && (
-                <p className="text-xs text-slate-500 text-center py-2">
+                <p className="text-xs text-muted-foreground text-center py-2">
                   ...and {changes.length - 200} more changes
                 </p>
               )}
@@ -690,22 +692,22 @@ function KeyboardShortcutsHelp({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="shortcuts-help" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+    <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="shortcuts-help" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Keyboard className="w-4 h-4 text-blue-400" />
-            <h3 className="text-sm font-semibold text-slate-200">Keyboard Shortcuts</h3>
+            <h3 className="text-sm font-semibold text-foreground">Keyboard Shortcuts</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-slate-700 text-slate-400">
+          <button onClick={onClose} className="p-1 rounded hover:bg-accent text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-4 space-y-2">
           {shortcuts.map((s, i) => (
             <div key={i} className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">{s.desc}</span>
-              <kbd className="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-xs font-mono text-slate-400">{s.keys}</kbd>
+              <span className="text-sm text-muted-foreground">{s.desc}</span>
+              <kbd className="bg-muted border border-border rounded px-2 py-0.5 text-xs font-mono text-muted-foreground">{s.keys}</kbd>
             </div>
           ))}
         </div>
@@ -747,7 +749,7 @@ function DataEditorTab({
     <div className="flex flex-col h-full gap-3 p-4 relative" data-testid="tab-editor">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-slate-200">Data Editor</h2>
+          <h2 className="text-sm font-semibold text-foreground">Data Editor</h2>
           <Badge variant="secondary" className="no-default-active-elevate text-xs">
             {csvData.data.length.toLocaleString()} rows
           </Badge>
@@ -755,7 +757,7 @@ function DataEditorTab({
             {csvData.headers.length} cols
           </Badge>
         </div>
-        <p className="text-xs text-slate-500">Double-click to edit | Right-click for options</p>
+        <p className="text-xs text-muted-foreground">Double-click to edit | Right-click for options</p>
       </div>
       <div className="flex-1 min-h-0 relative">
         <VirtualTable
@@ -812,11 +814,11 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
     <div className="flex flex-col h-full gap-4 p-4" data-testid="tab-sql">
       <div className="flex items-center gap-2">
         <Terminal className="w-4 h-4 text-emerald-400" />
-        <h2 className="text-sm font-semibold text-slate-200">SQL Query</h2>
+        <h2 className="text-sm font-semibold text-foreground">SQL Query</h2>
       </div>
       <div className="flex flex-col gap-2">
         <textarea
-          className="w-full h-28 bg-slate-900 border border-slate-700 rounded-md p-3 text-sm font-mono text-slate-200 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 placeholder:text-slate-600"
+          className="w-full h-28 bg-card border border-border rounded-md p-3 text-sm font-mono text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 placeholder:text-muted-foreground"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="SELECT * FROM ? LIMIT 10"
@@ -828,8 +830,8 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
             {isRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
             RUN
           </Button>
-          <span className="text-xs text-slate-500">
-            Use <code className="bg-slate-800 px-1 py-0.5 rounded text-blue-400">?</code> to reference your CSV data
+          <span className="text-xs text-muted-foreground">
+            Use <code className="bg-muted px-1 py-0.5 rounded text-blue-400">?</code> to reference your CSV data
           </span>
         </div>
       </div>
@@ -843,12 +845,12 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
         <div className="flex-1 min-h-0 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-xs text-slate-400">{results.length.toLocaleString()} row{results.length !== 1 ? "s" : ""} returned</span>
+            <span className="text-xs text-muted-foreground">{results.length.toLocaleString()} row{results.length !== 1 ? "s" : ""} returned</span>
           </div>
           {results.length > 0 ? (
             <div className="flex-1 min-h-0"><VirtualTable data={results} headers={resultHeaders} /></div>
           ) : (
-            <div className="flex items-center justify-center p-8 text-slate-500 text-sm">Query returned no results.</div>
+            <div className="flex items-center justify-center p-8 text-muted-foreground text-sm">Query returned no results.</div>
           )}
         </div>
       )}
@@ -862,20 +864,20 @@ function HealthCheckTab({ csvData }: { csvData: ParsedCSV }) {
     <div className="flex flex-col h-full gap-4 p-4" data-testid="tab-health">
       <div className="flex items-center gap-2">
         <HeartPulse className="w-4 h-4 text-rose-400" />
-        <h2 className="text-sm font-semibold text-slate-200">Health Check</h2>
+        <h2 className="text-sm font-semibold text-foreground">Health Check</h2>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-md bg-slate-800/60 border border-slate-700/50">
-          <p className="text-xs text-slate-400 mb-1">Rows</p>
-          <p className="text-lg font-bold text-slate-100 font-mono" data-testid="text-row-count">{csvData.data.length.toLocaleString()}</p>
+        <div className="p-3 rounded-md bg-muted/60 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-1">Rows</p>
+          <p className="text-lg font-bold text-foreground font-mono" data-testid="text-row-count">{csvData.data.length.toLocaleString()}</p>
         </div>
-        <div className="p-3 rounded-md bg-slate-800/60 border border-slate-700/50">
-          <p className="text-xs text-slate-400 mb-1">Columns</p>
-          <p className="text-lg font-bold text-slate-100 font-mono" data-testid="text-col-count">{csvData.headers.length}</p>
+        <div className="p-3 rounded-md bg-muted/60 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-1">Columns</p>
+          <p className="text-lg font-bold text-foreground font-mono" data-testid="text-col-count">{csvData.headers.length}</p>
         </div>
-        <div className="p-3 rounded-md bg-slate-800/60 border border-slate-700/50">
-          <p className="text-xs text-slate-400 mb-1">Delimiter</p>
-          <p className="text-lg font-bold text-slate-100 font-mono" data-testid="text-delimiter">
+        <div className="p-3 rounded-md bg-muted/60 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-1">Delimiter</p>
+          <p className="text-lg font-bold text-foreground font-mono" data-testid="text-delimiter">
             {csvData.delimiter === "," ? "comma" : csvData.delimiter === "\t" ? "tab" : csvData.delimiter === ";" ? "semicolon" : `"${csvData.delimiter}"`}
           </p>
         </div>
@@ -887,7 +889,7 @@ function HealthCheckTab({ csvData }: { csvData: ParsedCSV }) {
           </div>
           <div className="text-center space-y-1">
             <p className="text-lg font-semibold text-emerald-300">File is Healthy</p>
-            <p className="text-sm text-slate-400">No structural errors detected in this CSV file.</p>
+            <p className="text-sm text-muted-foreground">No structural errors detected in this CSV file.</p>
           </div>
         </div>
       ) : (
@@ -903,9 +905,9 @@ function HealthCheckTab({ csvData }: { csvData: ParsedCSV }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <Badge variant="destructive" className="no-default-active-elevate text-xs">{err.type}</Badge>
-                    {err.row !== undefined && <span className="text-xs text-slate-500 font-mono">Row {err.row}</span>}
+                    {err.row !== undefined && <span className="text-xs text-muted-foreground font-mono">Row {err.row}</span>}
                   </div>
-                  <p className="text-sm text-slate-300">{err.message}</p>
+                  <p className="text-sm text-muted-foreground">{err.message}</p>
                 </div>
               </div>
             ))}
@@ -1364,7 +1366,7 @@ export default function CsvRepairPage() {
 
   return (
     <div
-      className="flex flex-col h-screen bg-slate-950 text-slate-100"
+      className="flex flex-col h-screen bg-background text-foreground"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -1389,19 +1391,21 @@ export default function CsvRepairPage() {
         data-testid="input-file"
       />
 
-      <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm flex-shrink-0 z-20">
+      <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-blue-400" />
-            <span className="text-base font-bold tracking-tight text-slate-100">
-              csv<span className="text-blue-400">.</span>repair
-            </span>
-            <Badge variant="secondary" className="no-default-active-elevate text-[10px] uppercase tracking-widest px-1.5 py-0">
-              Beta
-            </Badge>
-          </div>
+          <Link href="/">
+            <div className="flex items-center gap-2 cursor-pointer">
+              <FileSpreadsheet className="w-5 h-5 text-blue-400" />
+              <span className="text-base font-bold tracking-tight text-foreground">
+                csv<span className="text-blue-400">.</span>repair
+              </span>
+              <Badge variant="secondary" className="no-default-active-elevate text-[10px] uppercase tracking-widest px-1.5 py-0">
+                Beta
+              </Badge>
+            </div>
+          </Link>
           {csvData && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
               <ChevronRight className="w-3 h-3" />
               <span className="truncate max-w-[200px]">{csvData.fileName}</span>
             </div>
@@ -1470,7 +1474,7 @@ export default function CsvRepairPage() {
               >
                 <Keyboard className="w-3.5 h-3.5" />
               </Button>
-              <div className="w-px h-6 bg-slate-700 mx-1" />
+              <div className="w-px h-6 bg-border mx-1" />
               <Button variant="secondary" size="sm" onClick={handleExport} className="gap-1.5" data-testid="button-export">
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Export</span>
@@ -1482,6 +1486,8 @@ export default function CsvRepairPage() {
             <span className="hidden sm:inline">Load CSV</span>
             <span className="sm:hidden">Load</span>
           </Button>
+          <div className="w-px h-6 bg-border mx-1" />
+          <Navigation />
         </div>
       </header>
 
@@ -1500,15 +1506,15 @@ export default function CsvRepairPage() {
 
       {isDragging && csvData && (
         <div className="absolute inset-0 z-30 bg-blue-950/30 border-2 border-dashed border-blue-500 flex items-center justify-center pointer-events-none">
-          <div className="bg-slate-900 border border-blue-500 rounded-lg px-6 py-4 text-center">
+          <div className="bg-card border border-blue-500 rounded-lg px-6 py-4 text-center">
             <Upload className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-sm text-slate-200">Drop to replace current file</p>
+            <p className="text-sm text-foreground">Drop to replace current file</p>
           </div>
         </div>
       )}
 
       <div className="flex flex-1 min-h-0">
-        <nav className="flex-shrink-0 w-48 border-r border-slate-800 bg-slate-900/50 flex flex-col py-3 gap-1 px-2" data-testid="sidebar">
+        <nav className="flex-shrink-0 w-48 border-r border-border bg-card/50 flex flex-col py-3 gap-1 px-2" data-testid="sidebar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -1517,8 +1523,8 @@ export default function CsvRepairPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-slate-800 text-slate-100"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
                 data-testid={`tab-${tab.id}`}
               >
@@ -1534,15 +1540,15 @@ export default function CsvRepairPage() {
           })}
 
           {csvData && (
-            <div className="mt-auto pt-4 px-2 border-t border-slate-800 space-y-2">
-              <div className="text-xs text-slate-500 space-y-1">
+            <div className="mt-auto pt-4 px-2 border-t border-border space-y-2">
+              <div className="text-xs text-muted-foreground space-y-1">
                 <div className="flex justify-between">
                   <span>Rows</span>
-                  <span className="text-slate-300 font-mono">{csvData.data.length.toLocaleString()}</span>
+                  <span className="text-muted-foreground font-mono">{csvData.data.length.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Columns</span>
-                  <span className="text-slate-300 font-mono">{csvData.headers.length}</span>
+                  <span className="text-muted-foreground font-mono">{csvData.headers.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Errors</span>
