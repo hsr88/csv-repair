@@ -117,7 +117,7 @@ export function PageHeader() {
           <Badge variant="secondary" className="no-default-active-elevate text-[10px] uppercase tracking-widest px-1.5 py-0">
             Beta
           </Badge>
-          <span className="hidden lg:inline text-xs text-muted-foreground ml-1">— Your broken CSV ends here.</span>
+          <span className="hidden lg:inline text-xs text-muted-foreground ml-1">- Your broken CSV ends here.</span>
         </div>
       </Link>
       <Navigation />
@@ -136,7 +136,7 @@ export function PageFooter() {
               csv<span className="text-blue-400">.</span>repair
             </span>
             <span className="mx-1">·</span>
-            <span>&copy; {new Date().getFullYear()} — Your broken CSV ends here.</span>
+            <span>&copy; {new Date().getFullYear()} - Your broken CSV ends here.</span>
           </div>
           <div className="flex items-center gap-4">
             <a

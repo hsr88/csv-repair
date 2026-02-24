@@ -1898,7 +1898,7 @@ export default function CsvRepairPage() {
               <Badge variant="secondary" className="no-default-active-elevate text-[10px] uppercase tracking-widest px-1.5 py-0">
                 Beta
               </Badge>
-              <span className="hidden lg:inline text-xs text-muted-foreground ml-1">— Your broken CSV ends here.</span>
+              <span className="hidden lg:inline text-xs text-muted-foreground ml-1">- Your broken CSV ends here.</span>
             </div>
           </Link>
           {csvData && (
