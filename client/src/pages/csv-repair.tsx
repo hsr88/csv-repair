@@ -1900,9 +1900,6 @@ export default function CsvRepairPage() {
               <span className="text-base font-bold tracking-tight text-foreground">
                 csv<span className="text-blue-400">.</span>repair
               </span>
-              <Badge variant="secondary" className="no-default-active-elevate text-[10px] uppercase tracking-widest px-1.5 py-0">
-                Beta
-              </Badge>
               <span className="hidden lg:inline text-xs text-muted-foreground ml-1">- Your broken CSV ends here.</span>
             </div>
           </Link>
