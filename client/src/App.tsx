@@ -9,6 +9,7 @@ import AboutPage from "@/pages/about";
 import FAQPage from "@/pages/faq";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import NotFound from "@/pages/not-found";
+import { CookieBanner } from "@/components/cookie-banner";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <CookieBanner />
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
