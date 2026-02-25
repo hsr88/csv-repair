@@ -39,6 +39,9 @@ import {
   Hash,
   Type,
   Link2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  MoreVertical,
 } from "lucide-react";
 import {
   BarChart,
@@ -157,7 +160,7 @@ function detectColumnType(data: Record<string, string>[], header: string): { typ
 const CHART_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#6366f1", "#14b8a6", "#f97316"];
 
 const ROW_HEIGHT = 36;
-const COL_WIDTH = 180;
+const COL_WIDTH = typeof window !== "undefined" && window.innerWidth < 640 ? 140 : 180;
 const OVERSCAN = 5;
 const MAX_HISTORY = 50;
 
@@ -369,20 +372,18 @@ function VirtualTable({
             return (
               <div
                 key={actualIndex}
-                className={`flex absolute left-0 right-0 border-b transition-colors ${
-                  isErrorRow
+                className={`flex absolute left-0 right-0 border-b transition-colors ${isErrorRow
                     ? "border-red-900/50 bg-red-950/20 hover:bg-red-950/30"
                     : "border-border hover:bg-muted/50"
-                }`}
+                  }`}
                 style={{ top: `${actualIndex * ROW_HEIGHT}px`, height: `${ROW_HEIGHT}px` }}
                 data-testid={`row-${actualIndex}`}
               >
                 <div
-                  className={`flex-shrink-0 flex items-center justify-center text-xs font-mono border-r ${
-                    isErrorRow
+                  className={`flex-shrink-0 flex items-center justify-center text-xs font-mono border-r ${isErrorRow
                       ? "text-red-400 bg-red-950/30 border-red-900/50"
                       : "text-muted-foreground bg-card/50 border-border"
-                  }`}
+                    }`}
                   style={{ width: 60 }}
                 >
                   {actualIndex + 1}
@@ -394,13 +395,12 @@ function VirtualTable({
                   return (
                     <div
                       key={h}
-                      className={`flex-shrink-0 flex items-center px-3 border-r text-sm truncate cursor-default ${
-                        isHighlighted
+                      className={`flex-shrink-0 flex items-center px-3 border-r text-sm truncate cursor-default ${isHighlighted
                           ? "bg-yellow-900/30 text-yellow-200 border-yellow-800/30"
                           : isErrorRow
-                          ? "border-red-900/30 text-muted-foreground"
-                          : "border-border text-muted-foreground"
-                      }`}
+                            ? "border-red-900/30 text-muted-foreground"
+                            : "border-border text-muted-foreground"
+                        }`}
                       style={{ width: COL_WIDTH }}
                       onDoubleClick={() => handleDoubleClick(actualIndex, h)}
                       onContextMenu={onContextMenu ? (e) => { e.preventDefault(); onContextMenu(e, actualIndex, h); } : undefined}
@@ -434,18 +434,16 @@ function VirtualTable({
 function EmptyState({ onLoadFile, isDragging }: { onLoadFile: () => void; isDragging: boolean }) {
   return (
     <div
-      className={`flex flex-col items-center justify-center h-full gap-6 p-8 text-center transition-colors ${
-        isDragging ? "bg-blue-950/20" : ""
-      }`}
+      className={`flex flex-col items-center justify-center h-full gap-6 p-8 text-center transition-colors ${isDragging ? "bg-blue-950/20" : ""
+        }`}
       data-testid="empty-state"
     >
       <div className="relative">
         <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl" />
-        <div className={`relative border rounded-2xl p-8 transition-colors ${
-          isDragging
+        <div className={`relative border rounded-2xl p-8 transition-colors ${isDragging
             ? "bg-blue-900/30 border-blue-500 border-dashed"
             : "bg-muted/80 border-border"
-        }`}>
+          }`}>
           <FileSpreadsheet className={`w-16 h-16 mx-auto ${isDragging ? "text-blue-300" : "text-blue-400"}`} />
         </div>
       </div>
@@ -542,8 +540,8 @@ function SearchReplaceBar({
         {searchState.matchCount > 0
           ? `${searchState.currentMatch + 1}/${searchState.matchCount}`
           : searchState.query
-          ? "0 results"
-          : ""}
+            ? "0 results"
+            : ""}
       </span>
       <Button variant="secondary" size="sm" onClick={onFindPrev} disabled={searchState.matchCount === 0} data-testid="button-find-prev">
         <ArrowUp className="w-3 h-3" />
@@ -676,9 +674,8 @@ function ContextMenu({
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); item.action(); onClose(); }}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted transition-colors ${
-              item.danger ? "text-red-400" : "text-muted-foreground"
-            }`}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted transition-colors ${item.danger ? "text-red-400" : "text-muted-foreground"
+              }`}
             data-testid={item.testId}
           >
             <item.icon className="w-3.5 h-3.5" />
@@ -835,9 +832,9 @@ function DataEditorTab({
   highlightCells: Map<string, boolean>;
 }) {
   return (
-    <div className="flex flex-col h-full gap-3 p-4 relative" data-testid="tab-editor">
+    <div className="flex flex-col h-full gap-2 sm:gap-3 p-2 sm:p-4 relative" data-testid="tab-editor">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <h2 className="text-sm font-semibold text-foreground">Data Editor</h2>
           <Badge variant="secondary" className="no-default-active-elevate text-xs">
             {csvData.data.length.toLocaleString()} rows
@@ -846,7 +843,7 @@ function DataEditorTab({
             {csvData.headers.length} cols
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground">Double-click to edit | Right-click for options</p>
+        <p className="text-xs text-muted-foreground hidden sm:block">Double-click to edit | Right-click for options</p>
       </div>
       <div className="flex-1 min-h-0 relative">
         <VirtualTable
@@ -1396,6 +1393,9 @@ export default function CsvRepairPage() {
   const [csvData, setCsvData] = useState<ParsedCSV | null>(null);
   const [originalData, setOriginalData] = useState<Record<string, string>[] | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("editor");
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const mobileToolsRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingFileName, setLoadingFileName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -1841,6 +1841,17 @@ export default function CsvRepairPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleUndo, handleRedo, handleExport, handleAutoRepair, csvData]);
 
+  useEffect(() => {
+    if (!mobileToolsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (mobileToolsRef.current && !mobileToolsRef.current.contains(e.target as Node)) {
+        setMobileToolsOpen(false);
+      }
+    };
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
+  }, [mobileToolsOpen]);
+
   const tabs = [
     { id: "editor" as TabType, label: "Data Editor", icon: Table2, color: "text-blue-400" },
     { id: "sql" as TabType, label: "SQL Query", icon: Terminal, color: "text-emerald-400" },
@@ -1852,17 +1863,17 @@ export default function CsvRepairPage() {
   const errorCount = csvData?.errors.length ?? 0;
   const changeCount = originalData && csvData
     ? (() => {
-        let count = 0;
-        const maxR = Math.max(originalData.length, csvData.data.length);
-        for (let r = 0; r < maxR; r++) {
-          for (const h of csvData.headers) {
-            const o = r < originalData.length ? (originalData[r]?.[h] ?? "") : "";
-            const n = r < csvData.data.length ? (csvData.data[r]?.[h] ?? "") : "";
-            if (o !== n) count++;
-          }
+      let count = 0;
+      const maxR = Math.max(originalData.length, csvData.data.length);
+      for (let r = 0; r < maxR; r++) {
+        for (const h of csvData.headers) {
+          const o = r < originalData.length ? (originalData[r]?.[h] ?? "") : "";
+          const n = r < csvData.data.length ? (csvData.data[r]?.[h] ?? "") : "";
+          if (o !== n) count++;
         }
-        return count;
-      })()
+      }
+      return count;
+    })()
     : 0;
 
   return (
@@ -1892,10 +1903,20 @@ export default function CsvRepairPage() {
         data-testid="input-file"
       />
 
-      <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0 z-20">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-2 px-2 sm:px-4 h-12 sm:h-14 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0 z-20">
+        <div className="flex items-center gap-2 min-w-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen((v) => !v)}
+            data-testid="button-toggle-sidebar"
+            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            className="text-muted-foreground hover:text-foreground flex-shrink-0 px-2"
+          >
+            {sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+          </Button>
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
+            <div className="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
               <FileSpreadsheet className="w-5 h-5 text-blue-400" />
               <span className="text-base font-bold tracking-tight text-foreground">
                 csv<span className="text-blue-400">.</span>repair
@@ -1904,89 +1925,86 @@ export default function CsvRepairPage() {
             </div>
           </Link>
           {csvData && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ChevronRight className="w-3 h-3" />
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+              <ChevronRight className="w-3 h-3 flex-shrink-0" />
               <span className="truncate max-w-[200px]">{csvData.fileName}</span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {csvData && (
             <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleUndo}
-                disabled={!canUndo}
-                data-testid="button-undo"
-                title="Undo (Ctrl+Z)"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleRedo}
-                disabled={!canRedo}
-                data-testid="button-redo"
-                title="Redo (Ctrl+Y)"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSearchState((s) => ({ ...s, open: !s.open }))}
-                data-testid="button-search"
-                title="Search & Replace (Ctrl+F)"
-              >
-                <Search className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleAutoRepair}
-                data-testid="button-auto-repair"
-                title="Auto-Repair (Ctrl+Shift+R)"
-              >
-                <Wrench className="w-3.5 h-3.5" />
-              </Button>
-              {changeCount > 0 && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowDiff(true)}
-                  className="gap-1.5"
-                  data-testid="button-diff"
-                  title="View Changes"
-                >
-                  <GitCompare className="w-3.5 h-3.5" />
-                  <span className="text-xs">{changeCount}</span>
+              <div className="hidden sm:flex items-center gap-1">
+                <Button variant="secondary" size="sm" onClick={handleUndo} disabled={!canUndo} data-testid="button-undo" title="Undo (Ctrl+Z)" className="px-2">
+                  <Undo2 className="w-3.5 h-3.5" />
                 </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowShortcuts(true)}
-                data-testid="button-shortcuts"
-                title="Keyboard Shortcuts (?)"
-              >
-                <Keyboard className="w-3.5 h-3.5" />
-              </Button>
-              <div className="w-px h-6 bg-border mx-1" />
-              <Button variant="secondary" size="sm" onClick={handleExport} className="gap-1.5" data-testid="button-export">
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Export</span>
-              </Button>
+                <Button variant="secondary" size="sm" onClick={handleRedo} disabled={!canRedo} data-testid="button-redo" title="Redo (Ctrl+Y)" className="px-2">
+                  <Redo2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setSearchState((s) => ({ ...s, open: !s.open }))} data-testid="button-search" title="Search & Replace (Ctrl+F)" className="px-2">
+                  <Search className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="secondary" size="sm" onClick={handleAutoRepair} data-testid="button-auto-repair" title="Auto-Repair (Ctrl+Shift+R)" className="px-2">
+                  <Wrench className="w-3.5 h-3.5" />
+                </Button>
+                {changeCount > 0 && (
+                  <Button variant="secondary" size="sm" onClick={() => setShowDiff(true)} className="gap-1 px-2" data-testid="button-diff" title="View Changes">
+                    <GitCompare className="w-3.5 h-3.5" />
+                    <span className="text-xs">{changeCount}</span>
+                  </Button>
+                )}
+                <Button variant="secondary" size="sm" onClick={() => setShowShortcuts(true)} data-testid="button-shortcuts" title="Keyboard Shortcuts (?)" className="px-2">
+                  <Keyboard className="w-3.5 h-3.5" />
+                </Button>
+                <div className="w-px h-6 bg-border mx-0.5" />
+                <Button variant="secondary" size="sm" onClick={handleExport} className="gap-1.5 px-2" data-testid="button-export">
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Export</span>
+                </Button>
+              </div>
+
+              <div className="relative sm:hidden" ref={mobileToolsRef}>
+                <Button variant="secondary" size="sm" onClick={() => setMobileToolsOpen((v) => !v)} className="px-2" data-testid="button-mobile-tools">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+                {mobileToolsOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]">
+                    <button onClick={() => { handleUndo(); setMobileToolsOpen(false); }} disabled={!canUndo} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-40" data-testid="mobile-undo">
+                      <Undo2 className="w-4 h-4" /> Undo
+                    </button>
+                    <button onClick={() => { handleRedo(); setMobileToolsOpen(false); }} disabled={!canRedo} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-40" data-testid="mobile-redo">
+                      <Redo2 className="w-4 h-4" /> Redo
+                    </button>
+                    <button onClick={() => { setSearchState((s) => ({ ...s, open: !s.open })); setMobileToolsOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors" data-testid="mobile-search">
+                      <Search className="w-4 h-4" /> Search & Replace
+                    </button>
+                    <button onClick={() => { handleAutoRepair(); setMobileToolsOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors" data-testid="mobile-auto-repair">
+                      <Wrench className="w-4 h-4" /> Auto-Repair
+                    </button>
+                    {changeCount > 0 && (
+                      <button onClick={() => { setShowDiff(true); setMobileToolsOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors" data-testid="mobile-diff">
+                        <GitCompare className="w-4 h-4" /> View Changes ({changeCount})
+                      </button>
+                    )}
+                    <button onClick={() => { handleExport(); setMobileToolsOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors" data-testid="mobile-export">
+                      <Download className="w-4 h-4" /> Export CSV
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    <button onClick={() => { setShowShortcuts(true); setMobileToolsOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors" data-testid="mobile-shortcuts">
+                      <Keyboard className="w-4 h-4" /> Keyboard Shortcuts
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
-          <Button size="sm" onClick={handleLoadFile} className="gap-1.5" data-testid="button-load-csv">
+          <Button size="sm" onClick={handleLoadFile} className="gap-1.5 px-2 sm:px-3" data-testid="button-load-csv">
             <Upload className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Load CSV</span>
             <span className="sm:hidden">Load</span>
           </Button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <Navigation />
+          <div className="w-px h-6 bg-border mx-0.5 hidden sm:block" />
+          <span className="hidden sm:inline"><Navigation /></span>
         </div>
       </header>
 
@@ -2013,56 +2031,57 @@ export default function CsvRepairPage() {
       )}
 
       <div className="flex flex-1 min-h-0">
-        <nav className="flex-shrink-0 w-48 border-r border-border bg-card/50 flex flex-col py-3 gap-1 px-2" data-testid="sidebar">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-                data-testid={`tab-${tab.id}`}
-              >
-                <tab.icon className={`w-4 h-4 ${isActive ? tab.color : ""}`} />
-                {tab.label}
-                {tab.id === "health" && errorCount > 0 && (
-                  <Badge variant="destructive" className="no-default-active-elevate ml-auto text-[10px] px-1.5 py-0">
-                    {errorCount}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
+        {sidebarOpen && (
+          <nav className="flex-shrink-0 w-44 md:w-48 border-r border-border bg-card/50 flex flex-col py-3 gap-1 px-2" data-testid="sidebar">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }`}
+                  data-testid={`tab-${tab.id}`}
+                >
+                  <tab.icon className={`w-4 h-4 ${isActive ? tab.color : ""}`} />
+                  {tab.label}
+                  {tab.id === "health" && errorCount > 0 && (
+                    <Badge variant="destructive" className="no-default-active-elevate ml-auto text-[10px] px-1.5 py-0">
+                      {errorCount}
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
 
-          {csvData && (
-            <div className="mt-auto pt-4 px-2 border-t border-border space-y-2">
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className="flex justify-between">
-                  <span>Rows</span>
-                  <span className="text-muted-foreground font-mono">{csvData.data.length.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Columns</span>
-                  <span className="text-muted-foreground font-mono">{csvData.headers.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Errors</span>
-                  <span className={`font-mono ${errorCount > 0 ? "text-red-400" : "text-emerald-400"}`}>{errorCount}</span>
-                </div>
-                {changeCount > 0 && (
+            {csvData && (
+              <div className="mt-auto pt-4 px-2 border-t border-border space-y-2">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <div className="flex justify-between">
-                    <span>Changes</span>
-                    <span className="text-blue-400 font-mono">{changeCount}</span>
+                    <span>Rows</span>
+                    <span className="text-muted-foreground font-mono">{csvData.data.length.toLocaleString()}</span>
                   </div>
-                )}
+                  <div className="flex justify-between">
+                    <span>Columns</span>
+                    <span className="text-muted-foreground font-mono">{csvData.headers.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Errors</span>
+                    <span className={`font-mono ${errorCount > 0 ? "text-red-400" : "text-emerald-400"}`}>{errorCount}</span>
+                  </div>
+                  {changeCount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Changes</span>
+                      <span className="text-blue-400 font-mono">{changeCount}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </nav>
+            )}
+          </nav>
+        )}
 
         <main className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
           {!csvData ? (
