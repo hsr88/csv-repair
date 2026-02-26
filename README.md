@@ -1,10 +1,14 @@
-# csv.repair
+# csv.repair 📊🧾
 
-**Your broken CSV ends here.**
+## Your broken CSV ends here.
 
-A free, browser-based tool for analyzing, querying, and repairing broken or oversized CSV files. No file uploads — everything runs locally in your browser. Your data never leaves your machine.
+## A free, browser-based tool for analyzing, querying, and repairing broken or oversized CSV files. No file uploads — everything runs locally in your browser. Your data never leaves your machine.
 
-**[Live Demo → csv.repair](https://csv.repair)**
+**[Live at → csv.repair](https://csv.repair)**
+
+![ezgif-4cf755f7ce5f2be7](https://github.com/user-attachments/assets/1a8eae2c-1048-41f9-a422-12dbb737af94)
+
+
 
 ---
 
