@@ -38,11 +38,10 @@ export function Navigation({ children }: { children?: React.ReactNode }) {
         {navLinks.map((link) => (
           <Link key={link.href} href={link.href}>
             <button
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                location === link.href
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${location === link.href
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+                }`}
               data-testid={`nav-${link.label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <link.icon className="w-3.5 h-3.5" />
@@ -76,11 +75,10 @@ export function Navigation({ children }: { children?: React.ReactNode }) {
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <button
-                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                    location === link.href
+                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${location === link.href
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
+                    }`}
                   data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   <link.icon className="w-4 h-4" />
@@ -100,11 +98,10 @@ export function Navigation({ children }: { children?: React.ReactNode }) {
             <div className="h-px bg-border my-1" />
             <Link href="/blog">
               <button
-                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                  location === "/blog"
+                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${location === "/blog"
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
+                  }`}
                 data-testid="mobile-nav-blog"
               >
                 <BookOpen className="w-4 h-4" />
@@ -155,6 +152,16 @@ export function PageFooter() {
                 Blog
               </span>
             </Link>
+            <a
+              href="https://github.com/hsr88/csv-repair"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              data-testid="footer-repo"
+            >
+              <Github className="w-3.5 h-3.5" />
+              Repository
+            </a>
             <a
               href="https://github.com/hsr88"
               target="_blank"
