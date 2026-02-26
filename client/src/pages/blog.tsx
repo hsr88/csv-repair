@@ -73,7 +73,7 @@ function InlineFormat({ text }: { text: string }) {
     } else if (part.startsWith("`") && part.endsWith("`")) {
       elements.push(<code key={key++} className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono text-foreground">{part.slice(1, -1)}</code>);
     } else if (part.startsWith("[")) {
-      const match = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
+      const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (match) {
         const isInternal = match[2].startsWith("/") || match[2].includes("csv.repair");
         if (isInternal && (match[2] === "https://csv.repair" || match[2] === "https://csv.repair/")) {
@@ -85,6 +85,11 @@ function InlineFormat({ text }: { text: string }) {
         elements.push(part);
       }
     } else {
+      // Don't duplicate text if it was extracted as a capture group in `part.split(...)`
+      if (i > 0 && parts[i - 1]?.startsWith("[")) {
+        const prevMatch = parts[i - 1].match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (prevMatch && (part === prevMatch[1] || part === prevMatch[2])) continue;
+      }
       elements.push(part);
     }
   }
