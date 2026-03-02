@@ -407,17 +407,24 @@ function VirtualTable({
                       data-testid={`cell-${actualIndex}-${h}`}
                     >
                       {isEditing ? (
-                        <input
-                          className="w-full h-full bg-blue-900/30 text-blue-200 outline-none border border-blue-500 rounded px-1 text-sm font-mono"
+                        <textarea
+                          className="w-full h-full bg-blue-900/30 text-blue-200 outline-none border border-blue-500 rounded px-1 text-sm font-mono resize-none"
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
                           onBlur={commitEdit}
-                          onKeyDown={handleKeyDownInEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              commitEdit();
+                            } else if (e.key === "Escape") {
+                              cancelEdit();
+                            }
+                          }}
                           autoFocus
                           data-testid={`edit-input-${actualIndex}-${h}`}
                         />
                       ) : (
-                        <span className="truncate">{row[h] ?? ""}</span>
+                        <span className="truncate whitespace-pre-wrap leading-tight">{row[h] ?? ""}</span>
                       )}
                     </div>
                   );
@@ -1594,7 +1601,10 @@ export default function CsvRepairPage() {
 
   const handleExport = useCallback(() => {
     if (!csvData) return;
-    const csv = Papa.unparse(csvData.data, { columns: csvData.headers });
+    const csv = Papa.unparse(csvData.data, {
+      columns: csvData.headers,
+      quotes: true, // Always quote fields to preserve newlines and special chars
+    });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
