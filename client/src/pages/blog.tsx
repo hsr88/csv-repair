@@ -160,11 +160,42 @@ function BlogListPage() {
   useEffect(() => {
     document.title = "Blog — csv.repair | CSV Tips, Guides & Data Cleaning Tutorials";
     document.querySelector('meta[name="description"]')?.setAttribute("content", "Practical guides and tutorials on fixing broken CSV files, data cleaning, CSV encoding issues, and working with large datasets. Tips from the csv.repair team.");
+    
+    // Update canonical for this page
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) {
+      canonicalLink.setAttribute('href', 'https://www.csv.repair/blog');
+    }
   }, []);
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.csv.repair/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://www.csv.repair/blog"
+      }
+    ]
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <PageHeader />
+      
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} 
+      />
+      
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 sm:py-12">
         <div className="flex items-center gap-3 mb-2">
           <FileSpreadsheet className="w-7 h-7 text-blue-500" />
@@ -202,6 +233,12 @@ function BlogArticlePage({ slug }: { slug: string }) {
     if (post) {
       document.title = `${post.title} — csv.repair Blog`;
       document.querySelector('meta[name="description"]')?.setAttribute("content", post.description);
+      
+      // Update canonical for this article
+      const canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (canonicalLink) {
+        canonicalLink.setAttribute('href', `https://www.csv.repair/blog/${post.slug}`);
+      }
     } else {
       document.title = "Article Not Found — csv.repair Blog";
     }
@@ -231,9 +268,34 @@ function BlogArticlePage({ slug }: { slug: string }) {
     description: post.description,
     datePublished: post.date,
     author: { "@type": "Person", name: "hsr88", url: "https://github.com/hsr88" },
-    publisher: { "@type": "Organization", name: "csv.repair", url: "https://csv.repair" },
-    mainEntityOfPage: { "@type": "WebPage", "@id": `https://csv.repair/blog/${post.slug}` },
+    publisher: { "@type": "Organization", name: "csv.repair", url: "https://www.csv.repair" },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `https://www.csv.repair/blog/${post.slug}` },
     keywords: post.keywords.join(", "),
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.csv.repair/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://www.csv.repair/blog"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": post.title,
+        "item": `https://www.csv.repair/blog/${post.slug}`
+      }
+    ]
   };
 
   return (
@@ -241,6 +303,7 @@ function BlogArticlePage({ slug }: { slug: string }) {
       <PageHeader />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <article className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 sm:py-10">
         <Link href="/blog">

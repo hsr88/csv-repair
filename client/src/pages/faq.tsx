@@ -103,6 +103,12 @@ export default function FAQPage() {
   useEffect(() => {
     document.title = "FAQ - csv.repair | CSV Repair Tool Help & Support";
     document.querySelector('meta[name="description"]')?.setAttribute("content", "Frequently asked questions about csv.repair. Learn about file size limits, SQL queries, auto-repair, keyboard shortcuts, repair templates, and more.");
+    
+    // Update canonical for this page
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) {
+      canonicalLink.setAttribute('href', 'https://www.csv.repair/faq');
+    }
   }, []);
 
   const faqJsonLd = {
@@ -118,6 +124,25 @@ export default function FAQPage() {
     })),
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.csv.repair/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "FAQ",
+        "item": "https://www.csv.repair/faq"
+      }
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageHeader />
@@ -125,6 +150,10 @@ export default function FAQPage() {
       <script 
         type="application/ld+json" 
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} 
+      />
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} 
       />
       
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">

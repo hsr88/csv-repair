@@ -6,11 +6,41 @@ export default function AboutPage() {
   useEffect(() => {
     document.title = "About csv.repair - Free Online CSV File Repair Tool";
     document.querySelector('meta[name="description"]')?.setAttribute("content", "Learn about csv.repair, a free browser-based tool for analyzing, querying, and repairing broken or oversized CSV files. No upload needed — your data stays private.");
+    
+    // Update canonical for this page
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) {
+      canonicalLink.setAttribute('href', 'https://www.csv.repair/about');
+    }
   }, []);
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.csv.repair/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "About",
+        "item": "https://www.csv.repair/about"
+      }
+    ]
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageHeader />
+      
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} 
+      />
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
         <div className="flex items-center gap-3 mb-8">
           <FileSpreadsheet className="w-8 h-8 text-blue-500" />

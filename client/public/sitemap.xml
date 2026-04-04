@@ -1,55 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://csv.repair/</loc>
+    <loc>https://www.csv.repair/</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://csv.repair/about</loc>
+    <loc>https://www.csv.repair/about</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://csv.repair/faq</loc>
+    <loc>https://www.csv.repair/faq</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://csv.repair/blog</loc>
+    <loc>https://www.csv.repair/blog</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://csv.repair/blog/how-to-fix-broken-csv-file</loc>
+    <loc>https://www.csv.repair/blog/how-to-fix-broken-csv-file</loc>
     <lastmod>2026-02-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://csv.repair/blog/how-to-clean-large-csv-files</loc>
+    <loc>https://www.csv.repair/blog/how-to-clean-large-csv-files</loc>
     <lastmod>2026-02-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://csv.repair/blog/common-csv-encoding-issues</loc>
+    <loc>https://www.csv.repair/blog/common-csv-encoding-issues</loc>
     <lastmod>2026-02-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://csv.repair/blog/csv-vs-tsv-difference</loc>
+    <loc>https://www.csv.repair/blog/csv-vs-tsv-difference</loc>
     <lastmod>2026-02-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://csv.repair/privacy</loc>
+    <loc>https://www.csv.repair/privacy</loc>
     <lastmod>2026-04-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

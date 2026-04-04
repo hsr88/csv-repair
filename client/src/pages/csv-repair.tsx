@@ -1648,7 +1648,78 @@ export default function CsvRepairPage() {
   useEffect(() => {
     document.title = "Fix CSV Files Online Free — Repair Broken CSV in Seconds | csv.repair";
     document.querySelector('meta[name="description"]')?.setAttribute("content", "Repair broken, corrupted, or too-large CSV files instantly. No upload needed — 100% private browser tool. Fix encoding, remove duplicates, run SQL queries. Try it free!");
+    
+    // Update canonical for homepage
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) {
+      canonicalLink.setAttribute('href', 'https://www.csv.repair/');
+    }
   }, []);
+
+  // HowTo Schema for Google rich results
+  const howToJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to Repair a Broken CSV File Online",
+    "description": "Step-by-step guide to fixing broken, corrupted, or malformed CSV files using csv.repair free online tool.",
+    "image": "https://www.csv.repair/og-image.png",
+    "totalTime": "PT2M",
+    "estimatedCost": {
+      "@type": "MonetaryAmount",
+      "currency": "USD",
+      "value": "0"
+    },
+    "supply": [
+      {
+        "@type": "HowToSupply",
+        "name": "Broken or corrupted CSV file"
+      }
+    ],
+    "tool": [
+      {
+        "@type": "HowToTool",
+        "name": "csv.repair online tool"
+      }
+    ],
+    "step": [
+      {
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Upload your CSV file",
+        "text": "Drag and drop your CSV file into the browser window or click the Load CSV button to select a file from your computer.",
+        "url": "https://www.csv.repair/#step1",
+        "image": "https://www.csv.repair/og-image.png"
+      },
+      {
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "Check Health Report",
+        "text": "Open the Health Check tab to see detected problems like encoding issues, malformed rows, or inconsistent delimiters.",
+        "url": "https://www.csv.repair/#step2"
+      },
+      {
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Run Auto-Repair",
+        "text": "Click Auto-Repair or press Ctrl+Shift+R to automatically fix common issues like trailing whitespace and empty rows.",
+        "url": "https://www.csv.repair/#step3"
+      },
+      {
+        "@type": "HowToStep",
+        "position": 4,
+        "name": "Edit and clean data",
+        "text": "Double-click any cell to edit it inline. Use Search & Replace (Ctrl+F) to fix multiple values at once.",
+        "url": "https://www.csv.repair/#step4"
+      },
+      {
+        "@type": "HowToStep",
+        "position": 5,
+        "name": "Export repaired CSV",
+        "text": "Click Export to download your fixed CSV file. Choose between US or European CSV formats.",
+        "url": "https://www.csv.repair/#step5"
+      }
+    ]
+  };
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -2169,6 +2240,10 @@ export default function CsvRepairPage() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      <script 
+        type="application/ld+json" 
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }} 
+      />
       {isLoading && <LoadingOverlay fileName={loadingFileName} />}
       {showDiff && csvData && originalData && (
         <DiffPreview
