@@ -35,11 +35,11 @@ If the export is empty, truncated, or missing whole records, try downloading it 
 
 ## Inspect the CSV in the browser
 
-[Load a copy in csv.repair](/), then open **Health Check** to review the detected delimiter and parse warnings. CSV processing happens locally on your device.
+[Load a copy in csv.repair](/). The import preview lets you choose the delimiter, encoding and header setting, then review structural issues before loading the editor. CSV processing happens locally on your device.
 
 Compare the headers and a few records with the source. Pay particular attention to the first failing row, the preceding row, and fields containing punctuation.
 
-If a quote error has merged records or a row has values beyond the headers, return to the original text before exporting. The editor's parsed table may not represent all the raw information. Correct the structure in a text editor or in the exporter, then reload the corrected file.
+If a quote error has merged records or a row has values beyond the headers, compare the original raw record with its proposed correction in the import preview. Edit the correction and apply it to rerun the checks. Import stays paused until structural issues are resolved. The [new workflow guide](/blog/csv-import-preview-merge-split-saved-repairs) shows these controls.
 
 ## Fix a concrete structural error
 
@@ -148,7 +148,7 @@ If the text is correct but all fields appear in one column, follow the [delimite
 
 [Open a copy in csv.repair](/) and inspect affected cells. The **Fix Common Encoding Issues** template replaces a defined list of common mojibake sequences, including some incorrectly displayed accented Latin characters.
 
-It is a targeted text repair, not a universal encoding converter. It cannot recover unknown characters that have already been replaced with question marks or replacement symbols. If the original file uses a legacy encoding, convert that original correctly before loading it instead of relying on substitutions.
+It is a targeted text repair, not a universal encoding converter. It cannot recover unknown characters that have already been replaced with question marks or replacement symbols. For an original Windows-1252, Windows-1250 or UTF-16 file, choose the matching encoding in the import preview instead of relying on substitutions. Convert other source encodings with an appropriate tool before importing.
 
 Review each changed value, then export a separate copy. csv.repair exports UTF-8 and offers an optional BOM. Check the exported file in the destination application too.
 
@@ -197,7 +197,7 @@ A smaller file can still strain a machine if its rows are wide. The size on disk
 
 [Open the file in csv.repair](/) when it fits your browser's memory. Parsing uses a worker, and the table renders a visible subset of rows. Those features keep rendering work down, but the parsed dataset still occupies memory.
 
-Check **Health Check** before editing. If the import reports [inconsistent field counts](/blog/csv-inconsistent-columns), repair the source structure before trusting filters or totals.
+Review the import preview before editing. If it reports [inconsistent field counts](/blog/csv-inconsistent-columns), correct the raw records in the preview or fix the source exporter. Import remains paused until structural issues are resolved.
 
 Use the SQL tab to explore a subset. For a dataset with \`country\` and \`status\` columns:
 
@@ -205,7 +205,7 @@ Use the SQL tab to explore a subset. For a dataset with \`country\` and \`status
 SELECT * FROM ? WHERE country = 'GB' AND status = 'active'
 \`\`\`
 
-Inspect the query result and its count. Check the available result controls before exporting: the editor's CSV export operates on its current dataset, so do not assume that merely running a query has replaced the original table.
+Inspect the query result and its count, then choose **Export results** to download that subset. The toolbar export still saves the editor dataset. The [new workflow guide](/blog/csv-import-preview-merge-split-saved-repairs) also explains how to merge files by header name, split loaded data with headers, and reuse saved cleanup rules.
 
 For a deterministic filtered file, the streaming example below writes only matching records.
 

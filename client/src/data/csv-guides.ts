@@ -56,7 +56,7 @@ If the data is already in column A, **Data > Text to Columns > Delimited** can s
 
 ## Check the file without relying on Excel's defaults
 
-[Open the CSV in csv.repair](/) to inspect its headers and values in a browser. Parsing happens locally. The app attempts to detect the delimiter, and **Health Check** shows the detected separator and parse warnings.
+[Open the CSV in csv.repair](/) to inspect its headers and values in a browser. Parsing happens locally. The import preview attempts to detect the delimiter and lets you override it before importing. It also shows structural issues that must be resolved.
 
 If the preview has the expected columns, the original problem is likely the Excel import configuration. You can keep the original file and fix the importer, or export a separate copy using the delimiter required by the receiving system. Review the decimal separator in the export options too.
 
@@ -132,11 +132,11 @@ That is why padding short rows without checking the source is risky. A correct c
 
 ## Diagnose the mismatch in csv.repair
 
-[Load a copy in csv.repair](/) and open **Health Check**. Review the parser warnings alongside the headers and displayed records.
+[Load a copy in csv.repair](/) and review the import preview. Check the parser explanations alongside the headers, valid records and raw text of each reported issue.
 
-Use the report to narrow your investigation. For an extra-field warning, examine the original text before exporting: values beyond the header may not be represented as editable columns. Saving that partially parsed table can omit information you still need.
+For an extra-field warning, compare the original record with the proposed correction. Edit the raw text to restore the intended fields, then choose **Apply correction to preview**. The app checks the file again and keeps import paused while issues remain.
 
-Fix structural damage in the original copy with a text editor, or correct the upstream exporter, then load the corrected file again. Inline editing is useful once each value is mapped to its proper column. **Auto-Repair** trims whitespace and removes empty rows; it cannot decide where an unknown missing value belongs.
+You can correct structural damage in the preview, in a text editor, or in the upstream exporter. A short-record suggestion adds empty fields at the end; move them if the missing value belongs elsewhere. Inline editing is useful once each value is mapped to its proper column. **Auto-Repair** trims whitespace and removes empty rows; it cannot decide where an unknown missing value belongs.
 
 For a wider diagnosis, use the [broken CSV repair checklist](/blog/how-to-fix-broken-csv-file).
 
@@ -213,7 +213,7 @@ Those leading zeros matter. They are part of the identifier, not decoration. A p
 
 Drag the CSV into csv.repair or use **Load CSV**. Look at the headers and a few records before making changes. The sample should show three columns and two records.
 
-Open **Health Check** if there are parse warnings. If an address has spilled into the next column, fix that [column mismatch](/blog/csv-inconsistent-columns) before starting a bulk edit. A table can look tidy while some values are mapped incorrectly.
+Resolve any import preview warnings first. If an address has spilled into the next column, fix that [column mismatch](/blog/csv-inconsistent-columns) before starting a bulk edit. A table can look tidy while some values are mapped incorrectly.
 
 For an unfamiliar export, keep the original file and write down the expected record count. That gives you something concrete to compare with your result.
 
@@ -246,7 +246,7 @@ If you later open the file in Excel, [import identifier columns as text](/blog/c
 
 A text editor is useful when one record has a missing closing quote and you need to inspect the raw structure. It becomes awkward when a field contains a comma or spans multiple lines: moving the wrong quote changes how the rest of the file is read.
 
-Use a script for recurring rules, such as producing the same monthly export. Keep validation checks beside the transformation so an unexpected header fails visibly.
+For recurring trim, empty-row removal, duplicate removal or lowercase rules, use [Saved Repairs](/blog/csv-import-preview-merge-split-saved-repairs). Use a script for transformations beyond those steps, with validation checks that fail visibly on unexpected headers.
 
 For very large files, available memory matters more than whether you have Excel installed. The [large CSV guide](/blog/how-to-clean-large-csv-files) covers filtering before editing and processing records in a stream.
 
@@ -316,7 +316,7 @@ This is also why counting lines in a text editor is not always the same as count
 
 [Open a copy in csv.repair](/) and check the parser warnings. If the fields line up correctly and you only need to change the text, edit the cell and export.
 
-If an unclosed quote has merged several records, go back to the original text. Locate the intended field boundary, correct the quote, and reload the file. Exporting a table that was already parsed incorrectly can preserve the wrong grouping or omit values beyond the headers.
+If an unclosed quote has merged several records, inspect the original raw text shown in the import preview. Locate the intended field boundary, correct the quote in **Proposed correction**, and apply it to rerun the checks. Restore all intended records in that text. Import stays paused until the reported structural issues are resolved.
 
 For a report about too many fields, compare the header with the original record. Our [inconsistent columns guide](/blog/csv-inconsistent-columns) walks through the difference between an extra delimiter and a missing value.
 
@@ -511,7 +511,7 @@ The uniqueness check suits this example's ID field; adapt it to your actual sche
 
 ## Use a visual check when the file is unfamiliar
 
-[Inspect the CSV in csv.repair](/) to review its headers, parser warnings and values locally in the browser. If structural errors have shifted or merged fields, correct the raw source before exporting; a partially parsed table may not contain every original value.
+[Inspect the CSV in csv.repair](/) to review its headers, parser warnings and values locally in the browser. If structural errors have shifted or merged fields, correct the raw records in the import preview or fix the source exporter. The editor import stays paused until those reported errors are resolved.
 
 After repairing the source, rerun the original pandas import and your validation checks. For files that exceed available memory, follow the [large-file workflow](/blog/how-to-clean-large-csv-files) and validate in chunks.
 

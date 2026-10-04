@@ -1,5 +1,6 @@
 import { csvGuides } from "./csv-guides";
 import { refreshedPosts } from "./refreshed-posts";
+import { workflowRelease } from "./workflow-release";
 
 export interface BlogPost {
   slug: string;
@@ -13,6 +14,7 @@ export interface BlogPost {
 }
 
 export const blogPosts: BlogPost[] = [
+  workflowRelease,
   ...csvGuides,
   ...refreshedPosts,
   {

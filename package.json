@@ -8,6 +8,7 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "test": "node --test script/csv-workflows.test.cjs",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

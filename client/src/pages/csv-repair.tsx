@@ -63,8 +63,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation, PageFooter } from "@/components/navigation";
 import { Link } from "wouter";
 import { TableCapturePromo } from "@/components/table-capture-promo";
+import { CsvImportDialog } from "@/components/csv-import-dialog";
+import { CsvFileTools } from "@/components/csv-file-tools";
+import { CsvRepairSets } from "@/components/csv-repair-sets";
+import { downloadCsv, type CsvTable } from "@/lib/csv-workflows";
 
-type TabType = "editor" | "sql" | "health" | "charts" | "templates";
+type TabType = "editor" | "sql" | "health" | "charts" | "templates" | "files" | "recipes";
 type SortDir = "asc" | "desc" | null;
 
 interface ParsedCSV {
@@ -490,21 +494,6 @@ function EmptyState({ onLoadFile, isDragging }: { onLoadFile: () => void; isDrag
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function LoadingOverlay({ fileName }: { fileName: string }) {
-  return (
-    <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6" data-testid="loading-overlay">
-      <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
-      <div className="text-center space-y-2">
-        <p className="text-lg font-semibold text-foreground">Parsing CSV</p>
-        <p className="text-sm text-muted-foreground truncate max-w-xs">{fileName}</p>
-      </div>
-      <div className="w-64 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: "70%" }} />
-      </div>
     </div>
   );
 }
@@ -1004,6 +993,8 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
   const [resultHeaders, setResultHeaders] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [showResultExport, setShowResultExport] = useState(false);
+  useEffect(() => { setResults(null); setResultHeaders([]); setShowResultExport(false); setError(null); }, [csvData]);
 
   const runQuery = useCallback(async () => {
     setIsRunning(true);
@@ -1013,7 +1004,7 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
       const alasql = (await import("alasql")).default;
       const res = alasql(query, [csvData.data]);
       if (Array.isArray(res) && res.length > 0) {
-        setResultHeaders(Object.keys(res[0]));
+        setResultHeaders(Array.from(new Set<string>(res.flatMap((row: Record<string, unknown>) => Object.keys(row)))));
         setResults(res);
       } else if (Array.isArray(res)) {
         setResults([]);
@@ -1031,6 +1022,16 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
 
   return (
     <div className="flex flex-col h-full gap-4 p-4" data-testid="tab-sql">
+      {showResultExport && results && <ExportOptionsModal onClose={() => setShowResultExport(false)} onExport={options => {
+        const data = results.map(row => Object.fromEntries(resultHeaders.map(h => {
+          const value: unknown = row[h];
+          let text = value == null ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
+          if (options.decimal === "," && /^-?\d+\.\d+$/.test(text)) text = text.replace(".", ",");
+          return [h, text];
+        })));
+        downloadCsv({ headers: resultHeaders, data }, `query_${csvData.fileName.replace(/\.[^.]+$/, "")}.csv`, options.delimiter, options.bom);
+        setShowResultExport(false);
+      }} />}
       <div className="flex items-center gap-2">
         <Terminal className="w-4 h-4 text-emerald-400" />
         <h2 className="text-sm font-semibold text-foreground">SQL Query</h2>
@@ -1065,6 +1066,7 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-xs text-muted-foreground">{results.length.toLocaleString()} row{results.length !== 1 ? "s" : ""} returned</span>
+            <Button size="sm" variant="outline" disabled={!results.length} onClick={() => setShowResultExport(true)} data-testid="button-export-sql">Export results</Button>
           </div>
           {results.length > 0 ? (
             <div className="flex-1 min-h-0"><VirtualTable data={results} headers={resultHeaders} /></div>
@@ -1658,8 +1660,6 @@ export default function CsvRepairPage() {
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const mobileToolsRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingFileName, setLoadingFileName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -1757,6 +1757,7 @@ export default function CsvRepairPage() {
   const [showDiff, setShowDiff] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
+  const [pendingImport, setPendingImport] = useState<{ files: File[]; merge: boolean } | null>(null);
 
   const pushHistory = useCallback(
     (data: Record<string, string>[], headers: string[], label: string) => {
@@ -1834,53 +1835,20 @@ export default function CsvRepairPage() {
     fileInputRef.current?.click();
   }, []);
 
-  const processFile = useCallback(
-    (file: File) => {
-      setIsLoading(true);
-      setLoadingFileName(file.name);
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        worker: true,
-        complete: (results) => {
-          if (!results.meta.fields || results.meta.fields.length === 0) {
-            setIsLoading(false);
-            toast({ title: "Parse Error", description: "Could not detect any columns.", variant: "destructive" });
-            return;
-          }
-          const data = results.data as Record<string, string>[];
-          const headers = results.meta.fields || [];
-          setCsvData({
-            data,
-            headers,
-            delimiter: results.meta.delimiter,
-            errors: results.errors,
-            fileName: file.name,
-          });
-          setOriginalData(data.map((r) => ({ ...r })));
-          setHistory([{ data, headers, label: "Initial load" }]);
-          setHistoryIndex(0);
-          setSortCol(null);
-          setSortDir(null);
-          setColumnStats(null);
-          setSearchState({ open: false, query: "", replacement: "", matchCount: 0, currentMatch: 0 });
-          setIsLoading(false);
-          setActiveTab("editor");
-          if (results.errors.length > 0) {
-            toast({
-              title: "File Loaded with Warnings",
-              description: `${results.errors.length} structural error${results.errors.length !== 1 ? "s" : ""} detected. Check the Health Check tab.`,
-            });
-          }
-        },
-        error: (err) => {
-          setIsLoading(false);
-          toast({ title: "Failed to Parse CSV", description: err.message || "Unexpected error.", variant: "destructive" });
-        },
-      });
-    },
-    [toast]
-  );
+  const processFile = useCallback((file: File) => {
+    setPendingImport({ files: [file], merge: false });
+  }, []);
+
+  const acceptImport = (table: CsvTable, delimiter: string, fileName: string) => {
+    setCsvData({ ...table, delimiter, fileName, errors: [] });
+    setOriginalData(table.data.map(row => ({ ...row })));
+    setHistory([{ ...table, label: "Initial load" }]);
+    setHistoryIndex(0);
+    setSortCol(null); setSortDir(null); setColumnStats(null); setContextMenu(null);
+    setSearchState({ open: false, query: "", replacement: "", matchCount: 0, currentMatch: 0 });
+    setActiveTab("editor"); setPendingImport(null); setIsDragging(false);
+    toast({ title: "CSV imported", description: `${table.data.length} records loaded. Structural checks passed.` });
+  };
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2192,6 +2160,7 @@ export default function CsvRepairPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (pendingImport) return;
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
@@ -2215,7 +2184,7 @@ export default function CsvRepairPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleUndo, handleRedo, handleExport, handleAutoRepair, csvData]);
+  }, [handleUndo, handleRedo, handleExport, handleAutoRepair, csvData, pendingImport]);
 
   useEffect(() => {
     if (!mobileToolsOpen) return;
@@ -2234,6 +2203,8 @@ export default function CsvRepairPage() {
     { id: "charts" as TabType, label: "Charts", icon: PieChartIcon, color: "text-violet-400" },
     { id: "templates" as TabType, label: "Repair Templates", icon: Zap, color: "text-amber-400" },
     { id: "health" as TabType, label: "Health Check", icon: HeartPulse, color: "text-rose-400" },
+    { id: "files" as TabType, label: "Merge & Split", icon: Columns, color: "text-blue-400" },
+    { id: "recipes" as TabType, label: "Saved Repairs", icon: Wrench, color: "text-amber-400" },
   ];
 
   const errorCount = csvData?.errors.length ?? 0;
@@ -2263,7 +2234,7 @@ export default function CsvRepairPage() {
         type="application/ld+json" 
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }} 
       />
-      {isLoading && <LoadingOverlay fileName={loadingFileName} />}
+      {pendingImport && <CsvImportDialog files={pendingImport.files} baseTable={pendingImport.merge ? csvData ?? undefined : undefined} onClose={() => { setPendingImport(null); setIsDragging(false); }} onImport={acceptImport} />}
       {showDiff && csvData && originalData && (
         <DiffPreview
           originalData={originalData}
@@ -2470,7 +2441,9 @@ export default function CsvRepairPage() {
         )}
 
         <main className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
-          {!csvData ? (
+          {activeTab === "files" ? (
+            <CsvFileTools table={csvData ?? undefined} filename={csvData?.fileName} onMerge={files => setPendingImport({ files, merge: true })} />
+          ) : !csvData ? (
             <EmptyState onLoadFile={handleLoadFile} isDragging={isDragging} />
           ) : activeTab === "editor" ? (
             <DataEditorTab
@@ -2493,6 +2466,12 @@ export default function CsvRepairPage() {
             <SQLQueryTab csvData={csvData} />
           ) : activeTab === "charts" ? (
             <ChartsTab csvData={csvData} />
+          ) : activeTab === "recipes" ? (
+            <CsvRepairSets table={csvData} onApply={(result, name) => {
+              pushHistory(result.data, result.headers, name);
+              setCsvData(prev => prev ? { ...prev, ...result } : prev);
+              setSortCol(null); setSortDir(null); setColumnStats(null);
+            }} />
           ) : activeTab === "templates" ? (
             <RepairTemplatesTab csvData={csvData} onApplyTemplate={handleApplyTemplate} />
           ) : (
