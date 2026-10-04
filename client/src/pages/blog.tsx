@@ -36,6 +36,13 @@ function renderMarkdown(content: string) {
         i++;
       }
       blocks.push({ type: "table", content: JSON.stringify(tableLines) });
+    } else if (/^\d+\. /.test(line)) {
+      const listItems: string[] = [];
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        listItems.push(lines[i].replace(/^\d+\. /, ""));
+        i++;
+      }
+      blocks.push({ type: "ol", content: JSON.stringify(listItems) });
     } else if (line.startsWith("- **") || line.startsWith("- ")) {
       const listItems: string[] = [];
       while (i < lines.length && lines[i].startsWith("- ")) {
@@ -48,7 +55,7 @@ function renderMarkdown(content: string) {
     } else {
       const paraLines: string[] = [line];
       i++;
-      while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("#") && !lines[i].startsWith("```") && !lines[i].startsWith("- ") && !lines[i].startsWith("|")) {
+      while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("#") && !lines[i].startsWith("```") && !lines[i].startsWith("- ") && !/^\d+\. /.test(lines[i]) && !lines[i].startsWith("|")) {
         paraLines.push(lines[i]);
         i++;
       }
@@ -75,14 +82,13 @@ function InlineFormat({ text }: { text: string }) {
     } else if (part.startsWith("[")) {
       const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (match) {
-        // Skip adding the capture groups `match[1]` and `match[2]` which split will output *after* this full match block.
-        // `parts.split(/(...)/g)` puts the capture groups right after the matched string in the array.
-        // We know that `match[1]` and `match[2]` are the next two items. We can manually fast-forward 'i'.
+        // String.split includes the label and URL capture groups after each link.
         i += 2;
 
-        const isInternal = match[2].startsWith("/") || match[2].includes("csv.repair");
-        if (isInternal && (match[2] === "https://csv.repair" || match[2] === "https://csv.repair/")) {
-          elements.push(<Link key={key++} href="/"><span className="text-blue-400 hover:text-blue-300 underline underline-offset-2 cursor-pointer">{match[1]}</span></Link>);
+        const isInternal = (match[2].startsWith("/") && !match[2].startsWith("//")) || /^https:\/\/(www\.)?csv\.repair(\/|$)/.test(match[2]);
+        if (isInternal) {
+          const href = match[2].replace(/^https:\/\/(www\.)?csv\.repair/, "") || "/";
+          elements.push(<Link key={key++} href={href}><span className="text-primary hover:underline underline underline-offset-2 cursor-pointer">{match[1]}</span></Link>);
         } else {
           elements.push(<a key={key++} href={match[2]} className="text-blue-400 hover:text-blue-300 underline underline-offset-2" target="_blank" rel="noopener noreferrer">{match[1]}</a>);
         }
@@ -140,14 +146,15 @@ function ArticleContent({ content }: { content: string }) {
             </div>
           );
         }
-        if (block.type === "ul") {
+        if (block.type === "ul" || block.type === "ol") {
           const items: string[] = JSON.parse(block.content);
+          const List = block.type === "ol" ? "ol" : "ul";
           return (
-            <ul key={i} className="space-y-2 pl-5">
+            <List key={i} className="space-y-2 pl-5">
               {items.map((item, j) => (
-                <li key={j} className="text-muted-foreground leading-relaxed list-disc"><InlineFormat text={item} /></li>
+                <li key={j} className={`text-muted-foreground leading-relaxed ${block.type === "ol" ? "list-decimal" : "list-disc"}`}><InlineFormat text={item} /></li>
               ))}
-            </ul>
+            </List>
           );
         }
         return <p key={i} className="text-muted-foreground leading-relaxed"><InlineFormat text={block.content} /></p>;
@@ -230,9 +237,20 @@ function BlogArticlePage({ slug }: { slug: string }) {
   const post = getBlogPost(slug);
 
   useEffect(() => {
+    const socialMetadata: { element: Element; content: string }[] = [];
     if (post) {
       document.title = `${post.title} — csv.repair Blog`;
       document.querySelector('meta[name="description"]')?.setAttribute("content", post.description);
+      for (const prefix of ["og", "twitter"]) {
+        const attribute = prefix === "og" ? "property" : "name";
+        for (const [field, value] of Object.entries({ title: post.title, description: post.description, url: `https://www.csv.repair/blog/${post.slug}` })) {
+          const element = document.querySelector(`meta[${attribute}="${prefix}:${field}"]`);
+          if (element) {
+            socialMetadata.push({ element, content: element.getAttribute("content") ?? "" });
+            element.setAttribute("content", value);
+          }
+        }
+      }
       
       // Update canonical for this article
       const canonicalLink = document.querySelector('link[rel="canonical"]');
@@ -243,6 +261,7 @@ function BlogArticlePage({ slug }: { slug: string }) {
       document.title = "Article Not Found — csv.repair Blog";
     }
     window.scrollTo(0, 0);
+    return () => socialMetadata.forEach(({ element, content }) => element.setAttribute("content", content));
   }, [post]);
 
   if (!post) {
@@ -267,6 +286,7 @@ function BlogArticlePage({ slug }: { slug: string }) {
     headline: post.title,
     description: post.description,
     datePublished: post.date,
+    dateModified: post.updatedDate ?? post.date,
     author: { "@type": "Person", name: "hsr88", url: "https://github.com/hsr88" },
     publisher: { "@type": "Organization", name: "csv.repair", url: "https://www.csv.repair" },
     mainEntityOfPage: { "@type": "WebPage", "@id": `https://www.csv.repair/blog/${post.slug}` },
@@ -318,6 +338,7 @@ function BlogArticlePage({ slug }: { slug: string }) {
             <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />{new Date(post.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
             <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{post.readingTime}</span>
           </div>
+          {post.updatedDate && <p className="mt-2 text-sm text-muted-foreground">Updated <time dateTime={post.updatedDate}>{new Date(`${post.updatedDate}T12:00:00`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</time></p>}
         </header>
 
         <ArticleContent content={post.content} />
