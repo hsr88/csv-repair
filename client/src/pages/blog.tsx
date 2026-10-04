@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useParams } from "wouter";
-import { FileSpreadsheet, Calendar, Clock, ArrowLeft, ChevronRight } from "lucide-react";
+import { FileSpreadsheet, Calendar, Clock, ArrowLeft, ChevronRight, Chrome, ExternalLink } from "lucide-react";
 import { PageHeader, PageFooter } from "@/components/navigation";
 import { blogPosts, getBlogPost } from "@/data/blog-posts";
 
@@ -90,7 +90,21 @@ function InlineFormat({ text }: { text: string }) {
           const href = match[2].replace(/^https:\/\/(www\.)?csv\.repair/, "") || "/";
           elements.push(<Link key={key++} href={href}><span className="text-primary hover:underline underline underline-offset-2 cursor-pointer">{match[1]}</span></Link>);
         } else {
-          elements.push(<a key={key++} href={match[2]} className="text-blue-400 hover:text-blue-300 underline underline-offset-2" target="_blank" rel="noopener noreferrer">{match[1]}</a>);
+          const isChromeExtension = match[2].startsWith("https://chromewebstore.google.com/detail/");
+          elements.push(
+            <a key={key++} href={match[2]} className="text-blue-400 hover:text-blue-300 underline underline-offset-2" target="_blank" rel="noopener noreferrer">
+              {match[1]}
+              {isChromeExtension && (
+                <>
+                  <span className="whitespace-nowrap">
+                    {"\u00a0"}<Chrome className="inline-block h-3.5 w-3.5 align-[-0.125em]" aria-hidden="true" />
+                    {"\u00a0"}<ExternalLink className="inline-block h-3 w-3 align-[-0.125em]" aria-hidden="true" />
+                  </span>
+                  <span className="sr-only"> (Chrome Web Store, opens in a new tab)</span>
+                </>
+              )}
+            </a>,
+          );
         }
       } else {
         elements.push(part);
