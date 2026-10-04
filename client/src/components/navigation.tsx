@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X, Sun, Moon, FileSpreadsheet, Info, HelpCircle, Shield, Heart, Github, BookOpen, TableProperties } from "lucide-react";
 import { useTheme } from "./theme-provider";
+import { ChromeLogo } from "./chrome-logo";
 
 const navLinks = [
-  { href: "/table-capture", label: "Capture tables", icon: TableProperties },
   { href: "/about", label: "About", icon: Info },
   { href: "/faq", label: "FAQ", icon: HelpCircle },
   { href: "/privacy", label: "Privacy Policy", icon: Shield },
@@ -34,6 +34,20 @@ export function Navigation({ children }: { children?: React.ReactNode }) {
   return (
     <nav className="flex items-center gap-1.5" data-testid="main-navigation">
       {children}
+
+      <Link
+        href="/table-capture"
+        className={`inline-flex shrink-0 items-center gap-2 rounded-md border px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${location === "/table-capture"
+          ? "border-blue-400 bg-blue-100 text-blue-950 dark:border-blue-400/60 dark:bg-blue-500/20 dark:text-blue-100"
+          : "border-blue-200 bg-blue-50 text-blue-900 hover:border-blue-400 hover:bg-blue-100 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-100 dark:hover:border-blue-400/60 dark:hover:bg-blue-500/20"
+        }`}
+        data-testid="nav-capture-tables"
+        title="Table Capture: capture web tables with our Chrome extension"
+        aria-current={location === "/table-capture" ? "page" : undefined}
+      >
+        <ChromeLogo className="h-5 w-5 shrink-0" />
+        <span className="whitespace-nowrap"><span className="hidden sm:inline">Chrome </span>extension</span>
+      </Link>
 
       <div className="hidden md:flex items-center gap-1">
         {navLinks.map((link) => (
