@@ -1,3 +1,4 @@
+import { openCookieSettings } from "@/lib/analytics";
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X, Sun, Moon, FileSpreadsheet, Info, HelpCircle, Shield, Heart, Github, BookOpen, TableProperties } from "lucide-react";
@@ -34,6 +35,7 @@ export function Navigation({ children }: { children?: React.ReactNode }) {
   return (
     <nav className="flex items-center gap-1.5" data-testid="main-navigation">
       {children}
+      <button onClick={openCookieSettings} aria-label="Cookie settings" title="Cookie settings" className="rounded-md p-2 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Shield className="h-4 w-4" /></button>
 
       <Link
         href="/table-capture"

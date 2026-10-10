@@ -1,3 +1,7 @@
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { trackPage } from "@/lib/analytics";
+import { CookieBanner } from "@/components/cookie-banner";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -37,12 +41,15 @@ function Router() {
 }
 
 function App() {
+  const [location] = useLocation();
+  useEffect(() => { trackPage(); }, [location]);
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Router />
+          <CookieBanner />
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

@@ -1,3 +1,4 @@
+import { track, tableMetrics } from "@/lib/analytics";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { downloadCsv, splitRanges, type CsvTable } from "@/lib/csv-workflows";
@@ -20,14 +21,14 @@ export function CsvFileTools({ table, filename, onMerge }: { table?: CsvTable; f
       <p className="max-w-2xl text-sm text-muted-foreground">Each part includes the current headers. Rows are counted as CSV records, so quoted multiline cells stay together. Downloads use UTF-8 and comma separators.</p>
       {!table ? <p className="text-sm">Import a CSV to split it.</p> : <>
         <label className="block max-w-xs space-y-1 text-sm">Data rows per file<input type="number" min="1" step="1" value={size} onChange={e => { setSize(e.target.value); setParts(undefined); }} className="w-full rounded-md border border-input bg-background px-3 py-2" /></label>
-        <Button disabled={!table.data.length} onClick={() => { try { setParts({ table, ranges: splitRanges(table.data.length, Number(size)) }); setError(""); } catch (e) { setError((e as Error).message); setParts(undefined); } }}>Prepare split files</Button>
+        <Button disabled={!table.data.length} onClick={() => { try { setParts({ table, ranges: splitRanges(table.data.length, Number(size)) }); track("feature_used", { feature: "split", outcome: "success", ...tableMetrics(table.data.length, table.headers.length) }); setError(""); } catch (e) { setError((e as Error).message); setParts(undefined); } }}>Prepare split files</Button>
         {!table.data.length && <p className="text-sm text-muted-foreground">There are no data rows to split.</p>}
       </>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {parts && parts.table === table && <div className="space-y-2">
         <p role="status" className="text-sm">{parts.ranges.length} files ready. Download each part below.</p>
         {parts.ranges.map((range, i) => <div key={i} className="flex flex-wrap items-center gap-3 text-sm">
-          <Button variant="outline" size="sm" onClick={() => downloadCsv({ headers: table.headers, data: table.data.slice(range.start, range.end) }, `${(filename || "data").replace(/\.[^.]+$/, "")}_part_${i + 1}.csv`)}>Download part {i + 1}</Button>
+          <Button variant="outline" size="sm" onClick={() => { downloadCsv({ headers: table.headers, data: table.data.slice(range.start, range.end) }, `${(filename || "data").replace(/\.[^.]+$/, "")}_part_${i + 1}.csv`); track("export_created", { export_type: "split", ...tableMetrics(range.end - range.start, table.headers.length) }); }}>Download part {i + 1}</Button>
           <span className="text-muted-foreground">Rows {range.start + 1}–{range.end} · {range.end - range.start} records</span>
         </div>)}
       </div>}

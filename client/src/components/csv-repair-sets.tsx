@@ -1,3 +1,4 @@
+import { track } from "@/lib/analytics";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { applyRecipe, readRecipes, type CsvTable, type RepairRecipe, type RepairStep } from "@/lib/csv-workflows";
@@ -42,7 +43,7 @@ export function CsvRepairSets({ table, onApply }: { table: CsvTable; onApply: (r
       <Button variant="outline" disabled={steps.length >= 30} onClick={() => updateSteps([...steps, { kind: "trim" }])}>Add step</Button>
       <Button variant="outline" disabled={!name.trim()} onClick={() => {
         const recipe: RepairRecipe = { id: crypto.randomUUID(), name: name.trim(), steps };
-        if (save([...recipes.filter(r => r.name !== recipe.name), recipe])) setStatus("Repair set saved. A set with the same name is replaced.");
+        if (save([...recipes.filter(r => r.name !== recipe.name), recipe])) { track("feature_used", { feature: "recipe_save", outcome: "success" }); setStatus("Repair set saved. A set with the same name is replaced."); }
       }}>Save repair set</Button>
       <Button onClick={() => { try { setPreview({ source: table, result: applyRecipe(table, steps) }); setError(""); setStatus(""); } catch (e) { setPreview(undefined); setError((e as Error).message); } }}>Preview changes</Button>
     </div>
@@ -52,7 +53,7 @@ export function CsvRepairSets({ table, onApply }: { table: CsvTable; onApply: (r
       <h3 className="text-sm font-semibold">Preview: {table.data.length} rows before → {validPreview.result.data.length} rows after</h3>
       <p className="text-xs text-muted-foreground">First 8 rows of each version. Steps run in the listed order. Duplicates keep the first matching row.</p>
       <div className="grid min-w-0 gap-3 lg:grid-cols-2">{[{ label: "Before", value: table }, { label: "After", value: validPreview.result }].map(({ label, value }) => <div key={label} className="min-w-0"><h4 className="mb-2 text-sm font-medium">{label}</h4><div className="max-h-64 overflow-auto"><table className="w-full text-xs"><thead><tr>{value.headers.map(h => <th key={h} className="border bg-muted px-2 py-1 text-left">{h}</th>)}</tr></thead><tbody>{value.data.slice(0, 8).map((row, i) => <tr key={i}>{value.headers.map(h => <td key={h} className="whitespace-pre-wrap border px-2 py-1">{row[h]}</td>)}</tr>)}</tbody></table></div></div>)}</div>
-      <Button onClick={() => { onApply(validPreview.result, name.trim() || "Custom repair set"); setPreview(undefined); setStatus("Repair set applied. Use Undo to restore the previous data."); }}>Apply repair set</Button>
+      <Button onClick={() => { onApply(validPreview.result, name.trim() || "Custom repair set"); track("feature_used", { feature: "recipe_apply", outcome: "success" }); setPreview(undefined); setStatus("Repair set applied. Use Undo to restore the previous data."); }}>Apply repair set</Button>
     </section>}
   </div>;
 }

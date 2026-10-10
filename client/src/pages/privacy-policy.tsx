@@ -1,3 +1,4 @@
+import { openCookieSettings } from "@/lib/analytics";
 import { useEffect } from "react";
 import { Shield } from "lucide-react";
 import { PageHeader, PageFooter } from "@/components/navigation";
@@ -69,10 +70,12 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground">3. Analytics</h2>
             <p>
-              We use <strong>Google Analytics</strong> to collect anonymous usage data about how visitors interact with our website. This helps us understand how the tool is used and how we can improve it. Google Analytics may collect the following information:
+              We use <strong>Google Analytics</strong> after you allow analytics cookies to collect pseudonymous usage data about how visitors interact with our website. This helps us understand how the tool is used and how we can improve it. Google Analytics may collect the following information:
             </p>
             <ul className="list-disc pl-6 space-y-1.5 mt-3">
               <li>Pages visited and time spent on each page</li>
+              <li>File selection, successful imports, error categories, feature use and generated exports</li>
+              <li>Size, row count, column count and processing time ranges (not exact file details)</li>
               <li>Browser type and version</li>
               <li>Operating system</li>
               <li>Screen resolution</li>
@@ -81,14 +84,14 @@ export default function PrivacyPolicyPage() {
               <li>Device type (desktop, mobile, tablet)</li>
             </ul>
             <p className="mt-3">
-              This data is collected anonymously and aggregated. It does not include any personally identifiable information (PII), and it does not include any content from CSV files you process in the tool. Google Analytics uses cookies to collect this information. You can opt out of Google Analytics tracking by using a browser extension such as the <a href="https://tools.google.com/dlpage/gaoptout" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer" data-testid="link-ga-optout">Google Analytics Opt-out Browser Add-on</a>.
+              Google Analytics uses cookie identifiers to distinguish browsers and measure repeat visits. We do not send CSV contents, file names, column names, SQL queries, search text or repair set names. Analytics is not loaded until you allow it; declining does not limit the tool. You can withdraw your choice using <button onClick={openCookieSettings} className="underline underline-offset-2">Cookie settings</button> in the navigation. Withdrawal stops future collection and clears Analytics cookies on this site; it does not delete previously collected data.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-foreground">4. Local Storage</h2>
             <p>
-              csv.repair uses your browser's local storage to save your theme preference (dark or light mode). This data is stored only on your device and is not transmitted to any server.
+              csv.repair uses your browser's local storage to save your theme preference (dark or light mode), your analytics consent and repair sets you choose to save (names and rules, never CSV rows). This data is stored only on your device and is not transmitted to any server.
             </p>
           </section>
 

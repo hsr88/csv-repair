@@ -1,3 +1,4 @@
+import { track, tableMetrics, durationMetrics } from "@/lib/analytics";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Papa from "papaparse";
 import {
@@ -997,12 +998,14 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
   useEffect(() => { setResults(null); setResultHeaders([]); setShowResultExport(false); setError(null); }, [csvData]);
 
   const runQuery = useCallback(async () => {
+    const startedAt = performance.now();
     setIsRunning(true);
     setError(null);
     setResults(null);
     try {
       const alasql = (await import("alasql")).default;
       const res = alasql(query, [csvData.data]);
+      track("feature_used", { feature: "sql", outcome: "success", ...durationMetrics(performance.now() - startedAt), ...tableMetrics(csvData.data.length, csvData.headers.length) });
       if (Array.isArray(res) && res.length > 0) {
         setResultHeaders(Array.from(new Set<string>(res.flatMap((row: Record<string, unknown>) => Object.keys(row)))));
         setResults(res);
@@ -1014,6 +1017,7 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
         setResultHeaders(["result"]);
       }
     } catch (err: any) {
+      track("feature_used", { feature: "sql", outcome: "error" });
       setError(err.message || "An error occurred executing the query.");
     } finally {
       setIsRunning(false);
@@ -1030,6 +1034,7 @@ function SQLQueryTab({ csvData }: { csvData: ParsedCSV }) {
           return [h, text];
         })));
         downloadCsv({ headers: resultHeaders, data }, `query_${csvData.fileName.replace(/\.[^.]+$/, "")}.csv`, options.delimiter, options.bom);
+        track("export_created", { export_type: "sql", ...tableMetrics(data.length, resultHeaders.length) });
         setShowResultExport(false);
       }} />}
       <div className="flex items-center gap-2">
@@ -1882,7 +1887,8 @@ export default function CsvRepairPage() {
 
   const handleCellEdit = useCallback(
     (rowIndex: number, header: string, value: string) => {
-      if (!csvData) return;
+      if (!csvData || csvData.data[rowIndex]?.[header] === value) return;
+      track("feature_used", { feature: "cell_edit", outcome: "success" });
       setCsvData((prev) => {
         if (!prev) return prev;
         const newData = [...prev.data];
@@ -1945,6 +1951,7 @@ export default function CsvRepairPage() {
     a.href = url;
     a.download = `repaired_${baseName}.csv`;
     a.click();
+    track("export_created", { export_type: "editor", ...tableMetrics(csvData.data.length, csvData.headers.length) });
     URL.revokeObjectURL(url);
     setShowExportOptions(false);
   }, [csvData]);
@@ -2000,6 +2007,7 @@ export default function CsvRepairPage() {
   const handleApplyTemplate = useCallback(
     (templateId: string, result: { data: Record<string, string>[]; headers: string[]; changes: number }) => {
       if (!csvData) return;
+      track("feature_used", { feature: "template", outcome: result.changes === 0 ? "no_changes" : "success" });
       if (result.changes === 0) {
         toast({ title: "No Changes", description: "This template found nothing to fix." });
         return;
@@ -2029,6 +2037,7 @@ export default function CsvRepairPage() {
       csvData.headers.forEach((h) => (newRow[h] = ""));
       const newData = [...csvData.data];
       newData.splice(idx, 0, newRow);
+      track("feature_used", { feature: "structure_edit", outcome: "success" });
       pushHistory(newData, csvData.headers, `Insert row ${position} R${contextMenu.row + 1}`);
       setCsvData((d) => d ? { ...d, data: newData } : d);
     },
@@ -2038,6 +2047,7 @@ export default function CsvRepairPage() {
   const handleDeleteRow = useCallback(() => {
     if (!csvData || !contextMenu) return;
     const newData = csvData.data.filter((_, i) => i !== contextMenu.row);
+    track("feature_used", { feature: "structure_edit", outcome: "success" });
     pushHistory(newData, csvData.headers, `Delete row ${contextMenu.row + 1}`);
     setCsvData((d) => d ? { ...d, data: newData } : d);
   }, [csvData, contextMenu, pushHistory]);
@@ -2055,6 +2065,7 @@ export default function CsvRepairPage() {
       const newHeaders = [...csvData.headers];
       newHeaders.splice(insertIdx, 0, newName);
       const newData = csvData.data.map((row) => ({ ...row, [newName]: "" }));
+      track("feature_used", { feature: "structure_edit", outcome: "success" });
       pushHistory(newData, newHeaders, `Insert column "${newName}"`);
       setCsvData((d) => d ? { ...d, data: newData, headers: newHeaders } : d);
     },
@@ -2074,6 +2085,7 @@ export default function CsvRepairPage() {
       delete newRow[colToDelete];
       return newRow;
     });
+    track("feature_used", { feature: "structure_edit", outcome: "success" });
     pushHistory(newData, newHeaders, `Delete column "${colToDelete}"`);
     setCsvData((d) => d ? { ...d, data: newData, headers: newHeaders } : d);
   }, [csvData, contextMenu, pushHistory, toast]);
@@ -2110,6 +2122,7 @@ export default function CsvRepairPage() {
       ...newData[match.row],
       [match.col]: oldVal.replace(new RegExp(searchState.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), searchState.replacement),
     };
+    track("feature_used", { feature: "replace", outcome: "success" });
     pushHistory(newData, csvData.headers, `Replace in R${match.row + 1}:${match.col}`);
     setCsvData((d) => d ? { ...d, data: newData } : d);
   }, [csvData, searchMatches, searchState, pushHistory]);
@@ -2124,6 +2137,7 @@ export default function CsvRepairPage() {
       }
       return newRow;
     });
+    track("feature_used", { feature: "replace", outcome: "success" });
     pushHistory(newData, csvData.headers, `Replace all "${searchState.query}" -> "${searchState.replacement}"`);
     setCsvData((d) => d ? { ...d, data: newData } : d);
     toast({ title: "Replace All", description: `Replaced ${searchMatches.length} occurrence${searchMatches.length !== 1 ? "s" : ""}.` });
@@ -2148,6 +2162,7 @@ export default function CsvRepairPage() {
         }
         return newRow;
       });
+    track("feature_used", { feature: "auto_repair", outcome: repairCount > 0 ? "success" : "no_changes" });
     pushHistory(newData, csvData.headers, "Auto-repair");
     setCsvData((d) => d ? { ...d, data: newData } : d);
     toast({

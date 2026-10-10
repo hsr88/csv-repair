@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { track, fileMetrics, tableMetrics, durationMetrics } from "@/lib/analytics";
+import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { defaultImportOptions, mergeTables, replaceRecord, type CsvTable, type ImportOptions, type ImportResult, type RecordIssue } from "@/lib/csv-workflows";
@@ -37,13 +38,32 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
   const [error, setError] = useState("");
   const [includeCurrent, setIncludeCurrent] = useState(!!baseTable);
   const [revision, setRevision] = useState(0);
+  const startedAt = useRef(performance.now());
+  const reportedErrors = useRef(new Set<string>());
+  const selectedOnce = useRef(false);
+  const finished = useRef(false);
+  const reportError = (category: "encoding" | "structure" | "parser") => {
+    if (reportedErrors.current.has(category)) return;
+    reportedErrors.current.add(category);
+    track("import_error", { error_category: category, ...fileMetrics(files) });
+  };
+  const cancel = () => {
+    if (!finished.current) {
+      finished.current = true;
+      track("import_cancelled", { ...fileMetrics(files), ...durationMetrics(performance.now() - startedAt.current) });
+    }
+    onClose();
+  };
+  useEffect(() => {
+    if (!selectedOnce.current) { selectedOnce.current = true; track("file_selected", fileMetrics(files)); }
+  }, [files]);
 
   useEffect(() => {
     let cancelled = false;
     setReading(true); setError(""); setResults([]); setSources([]);
     Promise.all(files.map(async file => new TextDecoder(options.encoding, { fatal: true }).decode(await file.arrayBuffer()).replace(/^\uFEFF/, "")))
       .then(texts => { if (!cancelled) { setSources(texts); setOriginals(texts); setRevision(r => r + 1); } })
-      .catch(() => { if (!cancelled) setError("Cannot decode the file with this encoding. Try the encoding used by the source exporter."); })
+      .catch(() => { if (!cancelled) { reportError("encoding"); setError("Cannot decode the file with this encoding. Try the encoding used by the source exporter."); } })
       .finally(() => { if (!cancelled) setReading(false); });
     return () => { cancelled = true; };
   }, [files, options.encoding]);
@@ -65,9 +85,9 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
         if (cancelled) return;
         parsed.push(result);
       }
-      if (!cancelled) setResults(parsed);
+      if (!cancelled) { setResults(parsed); if (parsed.some(r => r.issueCount > 0)) reportError("structure"); }
     };
-    run().catch(e => { if (!cancelled) setError(e.message); }).finally(() => { if (!cancelled) setParsing(false); });
+    run().catch(e => { if (!cancelled) { reportError("parser"); setError(e.message); } }).finally(() => { if (!cancelled) setParsing(false); });
     return () => { cancelled = true; worker?.terminate(); };
   }, [sources, options.delimiter, options.header, options.encoding]);
 
@@ -81,7 +101,7 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
     setOptions(prev => ({ ...prev, [key]: value }));
   };
   return (
-    <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
+    <Dialog open onOpenChange={open => { if (!open) cancel(); }}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto" onDragOver={e => e.stopPropagation()} onDrop={e => { e.preventDefault(); e.stopPropagation(); }}>
         <DialogHeader>
           <DialogTitle>{files.length > 1 || baseTable ? "Preview and merge CSV files" : "Preview CSV import"}</DialogTitle>
@@ -112,17 +132,22 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
           {result.issues.map(issue => <RecordRepair key={`${selected}-${revision}-${issue.start}`} issue={issue} onApply={value => {
             try {
               const next = replaceRecord(sources[selected], issue, value);
+              track("record_corrected");
               setResults([]); setSources(prev => prev.map((s, i) => i === selected ? next : s)); setRevision(r => r + 1);
             } catch (e) { setError((e as Error).message); }
           }} />)}
           {sources[selected] !== originals[selected] && <Button variant="outline" onClick={() => { setResults([]); setSources(prev => prev.map((s, i) => i === selected ? originals[i] : s)); setRevision(r => r + 1); }}>Reset corrections for this file</Button>}
         </>}
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={cancel}>Cancel</Button>
           <Button disabled={!ready} onClick={() => {
             const tables = includeCurrent && baseTable ? [baseTable, ...results] : results;
             const merged = tables.length > 1;
-            onImport(merged ? mergeTables(tables) : results[0], results[0].delimiter, merged ? "merged.csv" : files[0].name);
+            const table = merged ? mergeTables(tables) : results[0];
+            onImport(table, results[0].delimiter, merged ? "merged.csv" : files[0].name);
+            finished.current = true;
+            track("import_completed", { ...fileMetrics(files), ...tableMetrics(table.data.length, table.headers.length), ...durationMetrics(performance.now() - startedAt.current) });
+            if (merged) track("feature_used", { feature: "merge", outcome: "success", ...tableMetrics(table.data.length, table.headers.length) });
           }}>{issueCount ? `Resolve ${issueCount} issues to import` : files.length > 1 || includeCurrent ? "Merge into editor" : "Import into editor"}</Button>
         </div>
       </DialogContent>
