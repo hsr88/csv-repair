@@ -5,6 +5,9 @@ Wdrożenie: 10.10.2026. Usługa csvrepair (525806252), strumień csv (1366073991
 ## Raport
 
 Zapisany w GA4: CSV repair — faktyczne użycie narzędzia (16101612619).
+Opublikowany w menu: Raporty → CSV repair → Użycie narzędzia.
+[Otwórz raport](https://analytics.google.com/analytics/web/#/a9638488p525806252/reports/explorer?collectionId=16101790136&r=16101612619).
+Zarejestrowano wszystkie dziewięć parametrów jako niestandardowe wymiary zdarzeń.
 Wiersze: nazwa wydarzenia. Metryki: całkowita liczba użytkowników, liczba zdarzeń, sesje.
 Filtr obejmuje tylko osiem poniższych zdarzeń. Nie ma danych historycznych o tych działaniach.
 
@@ -52,3 +55,7 @@ Odmowy, blokery i zamknięcia kart powodują niepełny pomiar. import_cancelled 
 npm run check; npm run build; npm test.
 Testy analytics sprawdzają blokadę przed zgodą, powrót z zapisaną odmową, brak duplikatów, whitelist parametrów, wycofanie i synchronizację między kartami, niedostępność storage, przedziały i odporność na błąd tagu.
 Test UI: odmowa → import 3 rekordów → zmiana zgody bez utraty danych → SQL → eksport → wycofanie zgody.
+
+Wynik wdrożenia: TypeScript, build i 20 testów zakończone powodzeniem. Na produkcji sprawdzono brak tagu przed zgodą i po odmowie oraz import, automatyczną naprawę i eksport pliku testowego. W GA4 Realtime potwierdzono odbiór tool_opened, file_selected, import_completed, feature_used i export_created. Tag Assistant potwierdził tag G-R39FXG3NW8. Sesję diagnostyczną zakończono.
+
+Nowy raport szczegółowy może początkowo pokazywać zero, mimo obecności zdarzeń w Realtime: dane wymagają przetworzenia przez GA4. Wybierz zakres obejmujący 10.10.2026 lub późniejsze dni. Dzisiejsze dane obejmują również testy wdrożeniowe.
