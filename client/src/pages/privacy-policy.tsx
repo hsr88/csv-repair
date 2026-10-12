@@ -47,7 +47,7 @@ export default function PrivacyPolicyPage() {
           <Shield className="w-8 h-8 text-blue-500" />
           <h1 className="text-3xl font-bold">Privacy Policy</h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: February 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: October 12, 2026</p>
 
         <div className="prose prose-sm dark:prose-invert max-w-none space-y-8 text-muted-foreground leading-relaxed">
           <section>
@@ -70,7 +70,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground">3. Analytics</h2>
             <p>
-              We use <strong>Google Analytics</strong> after you allow analytics cookies to collect pseudonymous usage data about how visitors interact with our website. This helps us understand how the tool is used and how we can improve it. Google Analytics may collect the following information:
+              We use <strong>Google Analytics</strong> by default, unless you turn it off, to collect pseudonymous usage data about how visitors interact with our website. This helps us understand how the tool is used and how we can improve it. Google Analytics may collect the following information:
             </p>
             <ul className="list-disc pl-6 space-y-1.5 mt-3">
               <li>Pages visited and time spent on each page</li>
@@ -84,14 +84,14 @@ export default function PrivacyPolicyPage() {
               <li>Device type (desktop, mobile, tablet)</li>
             </ul>
             <p className="mt-3">
-              Google Analytics uses cookie identifiers to distinguish browsers and measure repeat visits. We do not send CSV contents, file names, column names, SQL queries, search text or repair set names. Analytics is not loaded until you allow it; declining does not limit the tool. You can withdraw your choice using <button onClick={openCookieSettings} className="underline underline-offset-2">Cookie settings</button> in the navigation. Withdrawal stops future collection and clears Analytics cookies on this site; it does not delete previously collected data.
+              Google Analytics uses cookie identifiers to distinguish browsers and measure repeat visits. We do not send CSV contents, file names, column names, SQL queries, search text or repair set names. Analytics loads when you visit unless you have previously turned it off. You can turn it off at any time using <button onClick={openCookieSettings} className="underline underline-offset-2">Cookie settings</button> in the navigation without limiting the tool. Turning it off stops future collection and clears Analytics cookies on this site; it does not delete previously collected data. Previously saved refusals remain in effect.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-foreground">4. Local Storage</h2>
             <p>
-              csv.repair uses your browser's local storage to save your theme preference (dark or light mode), your analytics consent and repair sets you choose to save (names and rules, never CSV rows). This data is stored only on your device and is not transmitted to any server.
+              csv.repair uses your browser's local storage to save your theme preference (dark or light mode), your analytics preference and repair sets you choose to save (names and rules, never CSV rows). This data is stored only on your device and is not transmitted to any server.
             </p>
           </section>
 

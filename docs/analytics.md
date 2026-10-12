@@ -2,6 +2,8 @@
 
 Wdrożenie: 10.10.2026. Usługa csvrepair (525806252), strumień csv (13660739913), G-R39FXG3NW8.
 
+Zmiana 12.10.2026 na żądanie właściciela: analityka działa domyślnie od wejścia, z możliwością wyłączenia. Zapisane odmowy pozostają respektowane. Nie porównuj bezpośrednio okresu opt-in 10–12 października z okresem po tej zmianie.
+
 ## Raport
 
 Zapisany w GA4: CSV repair — faktyczne użycie narzędzia (16101612619).
@@ -13,7 +15,7 @@ Filtr obejmuje tylko osiem poniższych zdarzeń. Nie ma danych historycznych o t
 
 | Zdarzenie | Kiedy |
 | --- | --- |
-| tool_opened | Otwarta główna strona edytora, po zgodzie |
+| tool_opened | Otwarta główna strona edytora, gdy analityka nie jest wyłączona |
 | file_selected | Plik/pliki przekazane do podglądu; nie kliknięcie przycisku wyboru |
 | import_completed | Poprawne dane przekazane do edytora |
 | import_error | Kategoria encoding/structure/parser; raz na kategorię na otwarty podgląd |
@@ -40,7 +42,7 @@ export_type: editor, sql, split. split liczy każde pobranie części; feature=s
 
 ## Prywatność i ograniczenia
 
-Basic consent: przed zgodą nie ładujemy tagu Google ani nie kolejkujemy wcześniejszych działań. Stare cookie-consent nie jest zgodą na nowy zakres; pytamy ponownie. Cookie settings pozwala zmienić zdanie bez przeładowania i utraty CSV. Wycofanie ustawia ga-disable, odmawia analytics_storage i usuwa cookies _ga. Zmiana synchronizuje się między kartami. W razie niedostępności localStorage wybór działa w pamięci bieżącej karty.
+Od 12.10.2026 tag Google ładuje się domyślnie, chyba że csv-analytics-consent-v2 zawiera declined. Brak wyboru nie jest zapisywany jako świadoma akceptacja. Baner informuje o domyślnym pomiarze. Cookie settings pozwala go wyłączyć bez przeładowania i utraty CSV. Wyłączenie ustawia ga-disable, odmawia analytics_storage i usuwa cookies _ga. Zmiana synchronizuje się między kartami. W razie niedostępności localStorage wybór działa w pamięci bieżącej karty.
 
 Reklamowe zgody pozostają denied, Google Signals i personalizacja reklam wyłączone w kodzie. Automatyczny pomiar zaawansowany GA4 wyłączono za osobną zgodą właściciela, by nie zbierał nazw pobrań, tekstów/formularzy ani zdublowanych odsłon SPA.
 
@@ -53,9 +55,9 @@ Odmowy, blokery i zamknięcia kart powodują niepełny pomiar. import_cancelled 
 ## Walidacja
 
 npm run check; npm run build; npm test.
-Testy analytics sprawdzają blokadę przed zgodą, powrót z zapisaną odmową, brak duplikatów, whitelist parametrów, wycofanie i synchronizację między kartami, niedostępność storage, przedziały i odporność na błąd tagu.
+Testy analytics sprawdzają domyślny start bez kliknięcia banera, powrót z zapisaną odmową, brak duplikatów, whitelist parametrów, wycofanie i synchronizację między kartami, niedostępność storage, przedziały i odporność na błąd tagu.
 Test UI: odmowa → import 3 rekordów → zmiana zgody bez utraty danych → SQL → eksport → wycofanie zgody.
 
-Wynik wdrożenia: TypeScript, build i 20 testów zakończone powodzeniem. Na produkcji sprawdzono brak tagu przed zgodą i po odmowie oraz import, automatyczną naprawę i eksport pliku testowego. W GA4 Realtime potwierdzono odbiór tool_opened, file_selected, import_completed, feature_used i export_created. Tag Assistant potwierdził tag G-R39FXG3NW8. Sesję diagnostyczną zakończono.
+Historyczna walidacja wdrożenia 10.10: TypeScript, build i 20 testów zakończone powodzeniem. Na produkcji sprawdzono ówczesną blokadę tagu przed zgodą i po odmowie oraz import, automatyczną naprawę i eksport pliku testowego. W GA4 Realtime potwierdzono odbiór tool_opened, file_selected, import_completed, feature_used i export_created. Tag Assistant potwierdził tag G-R39FXG3NW8. Sesję diagnostyczną zakończono.
 
 Nowy raport szczegółowy może początkowo pokazywać zero, mimo obecności zdarzeń w Realtime: dane wymagają przetworzenia przez GA4. Wybierz zakres obejmujący 10.10.2026 lub późniejsze dni. Dzisiejsze dane obejmują również testy wdrożeniowe.

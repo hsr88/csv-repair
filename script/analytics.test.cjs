@@ -14,12 +14,18 @@ function setup(host = 'www.csv.repair', stored = {}, storageFails = false) {
   const calls = () => (window.dataLayer || []).map(x => Array.from(x));
   return {a: exports, window, scripts, memory, calls, deleted, listeners};
 }
-test('no consent or legacy acceptance: no tag, no events, clear only GA cookies', () => {
+test('new visitors and legacy acceptance start analytics without a banner click', () => {
   for(const stored of [{}, {'cookie-consent':'accepted'}]) {
     const e=setup(undefined,stored); e.a.initAnalytics(); e.a.track('file_selected'); e.a.trackPage();
-    assert.equal(e.scripts.length,0); assert.equal(e.calls().length,0); assert.ok(e.window['ga-disable-G-R39FXG3NW8']);
-    assert.ok(e.deleted.some(x=>x.startsWith('_ga='))); assert.ok(!e.deleted.some(x=>x.startsWith('essential=')));
+    assert.equal(e.scripts.length,1); assert.equal(e.window['ga-disable-G-R39FXG3NW8'],false);
+    assert.ok(e.calls().some(x=>x[1]==='file_selected')); assert.ok(e.calls().some(x=>x[1]==='page_view'));
+    assert.equal(e.a.getConsent(),null); assert.equal(e.memory.has(e.a.CONSENT_KEY),false);
   }
+});
+test('previously declined visitors remain excluded and only GA cookies are cleared', () => {
+  const e=setup(undefined,{'csv-analytics-consent-v2':'declined'});e.a.initAnalytics();e.a.trackPage();e.a.track('file_selected');
+  assert.equal(e.scripts.length,0);assert.equal(e.calls().length,0);assert.ok(e.window['ga-disable-G-R39FXG3NW8']);
+  assert.ok(e.deleted.some(x=>x.startsWith('_ga=')));assert.ok(!e.deleted.some(x=>x.startsWith('essential=')));
 });
 test('accept loads exactly once, sets ad consent denied, deduplicates pageview and editor event',()=>{
   const e=setup();e.a.initAnalytics();e.a.setConsent('accepted');e.a.initAnalytics();e.a.trackPage();e.a.setConsent('accepted');

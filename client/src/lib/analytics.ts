@@ -62,8 +62,8 @@ export function initAnalytics() {
   if (initialized) return;
   initialized = true;
   consent = getConsent();
-  disabled(consent !== "accepted");
-  if (consent === "accepted") start(); else clearCookies();
+  disabled(consent === "declined");
+  if (consent !== "declined") start(); else clearCookies();
   window.addEventListener("storage", event => {
     if (event.key === CONSENT_KEY || event.key === null) {
       consent = null;
@@ -74,8 +74,8 @@ export function initAnalytics() {
 }
 function applyConsent(value: Consent | null) {
   consent = value;
-  disabled(value !== "accepted");
-  if (value === "accepted") {
+  disabled(value === "declined");
+  if (value !== "declined") {
     if (started) send("consent", "update", { analytics_storage: "granted" });
     start();
     trackPage();
@@ -93,7 +93,7 @@ export function setConsent(value: Consent) {
 }
 export function openCookieSettings() { window.dispatchEvent(new Event("csv-cookie-settings")); }
 export function track(name: EventName, params: Params = {}) {
-  if (getConsent() !== "accepted" || !production() || !events.includes(name)) return;
+  if (getConsent() === "declined" || !production() || !events.includes(name)) return;
   const safe: Record<string, string> = {};
   for (const [key, value] of Object.entries(params)) {
     if (Object.prototype.hasOwnProperty.call(allowed, key) && (allowed[key as keyof Params] as readonly string[]).includes(value)) safe[key] = value;
@@ -101,7 +101,7 @@ export function track(name: EventName, params: Params = {}) {
   try { win().gtag?.("event", name, { ...safe, page_location: window.location.origin + window.location.pathname, page_referrer: referrerOrigin(), send_to: MEASUREMENT_ID }); } catch { /* Analytics must never interrupt CSV operations. */ }
 }
 export function trackPage() {
-  if (getConsent() !== "accepted" || !production()) return;
+  if (getConsent() === "declined" || !production()) return;
   const path = window.location.pathname;
   if (path === lastPage) return;
   lastPage = path;
