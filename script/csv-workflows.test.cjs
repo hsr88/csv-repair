@@ -117,3 +117,36 @@ test('100,001 records survive import and split boundaries', () => {
   assert.equal(result.data[100000].id, '100000');
   assert.deepEqual(splitRanges(result.data.length, 50000), [{ start: 0, end: 50000 }, { start: 50000, end: 100000 }, { start: 100000, end: 100001 }]);
 });
+
+
+test('BOM detection handles UTF-16 and rejects invalid UTF-8 without replacing bytes', () => {
+  const { decodeCsv } = loaded.exports;
+  const le = Buffer.concat([Buffer.from([255, 254]), Buffer.from('name\nZażółć', 'utf16le')]);
+  assert.equal(decodeCsv(le, 'auto'), 'name\nZażółć');
+  assert.equal(decodeCsv(Buffer.from([254,255,0,97,0,10,0,98]), 'auto'), 'a\nb');
+  assert.throws(() => decodeCsv(Buffer.from([0xe9]), 'auto'));
+  assert.equal(decodeCsv(Buffer.from([0xe9]), 'windows-1252'), 'é');
+});
+
+test('header repair keeps every value and avoids generated name collisions', () => {
+  const source = 'id,id,id (2),,Column 4\n1,2,3,4,5';
+  const initial = parse(source);
+  const issue = initial.issues[0];
+  assert.equal(issue.kind, 'header');
+  const fixed = parse(replaceRecord(source, issue, issue.suggestion));
+  assert.equal(fixed.issueCount, 0);
+  assert.deepEqual(Object.values(fixed.data[0]), ['1', '2', '3', '4', '5']);
+  assert.equal(new Set(fixed.headers).size, 5);
+});
+
+test('batch padding preserves CRLF, multiline cells, following records and unresolved extra fields', () => {
+  const { padShortRecords } = loaded.exports;
+  const source = '\uFEFFid,note,last\r\n1,"two\r\nlines"\r\n2\r\n3,ok,end\r\n4,x,y,z';
+  const initial = parse(source, { delimiter: ',' });
+  const fixed = parse(padShortRecords(source, initial.issues), { delimiter: ',' });
+  assert.equal(fixed.issueCount, 1);
+  assert.equal(fixed.data.length, 3);
+  assert.deepEqual(fixed.data[0], { id: '1', note: 'two\r\nlines', last: '' });
+  assert.equal(fixed.data[2].last, 'end');
+  assert.equal(fixed.issues[0].raw, '4,x,y,z');
+});

@@ -2,7 +2,7 @@ import { track, fileMetrics, tableMetrics, durationMetrics } from "@/lib/analyti
 import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { defaultImportOptions, mergeTables, replaceRecord, type CsvTable, type ImportOptions, type ImportResult, type RecordIssue } from "@/lib/csv-workflows";
+import { decodeCsv, padShortRecords, defaultImportOptions, mergeTables, replaceRecord, type CsvTable, type ImportOptions, type ImportResult, type RecordIssue } from "@/lib/csv-workflows";
 
 const fieldClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
@@ -16,7 +16,7 @@ function RecordRepair({ issue, onApply }: { issue: RecordIssue; onApply: (value:
         <label className="space-y-1 text-sm">Original record<textarea readOnly value={issue.raw} className={`${fieldClass} min-h-28 font-mono`} /></label>
         <label className="space-y-1 text-sm">Proposed correction<textarea value={value} onChange={e => setValue(e.target.value)} className={`${fieldClass} min-h-28 font-mono`} /></label>
       </div>
-      <p className="text-xs text-muted-foreground">Short records are suggested with empty fields at the end. Check where the missing value belongs. Quote errors may include several records: restore their intended boundaries.</p>
+      <p className="text-xs text-muted-foreground">{issue.kind === "header" ? "Each column needs a unique name. The suggestion renames duplicate or empty headers and preserves every column. Review the names before applying." : "Short records are suggested with empty fields at the end. Check where the missing value belongs. Quote errors may include several records: restore their intended boundaries."}</p>
       <Button size="sm" disabled={!value.trim() || value === issue.raw} onClick={() => onApply(value)}>Apply correction to preview</Button>
     </div>
   );
@@ -61,9 +61,9 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
   useEffect(() => {
     let cancelled = false;
     setReading(true); setError(""); setResults([]); setSources([]);
-    Promise.all(files.map(async file => new TextDecoder(options.encoding, { fatal: true }).decode(await file.arrayBuffer()).replace(/^\uFEFF/, "")))
+    Promise.all(files.map(async file => decodeCsv(new Uint8Array(await file.arrayBuffer()), options.encoding)))
       .then(texts => { if (!cancelled) { setSources(texts); setOriginals(texts); setRevision(r => r + 1); } })
-      .catch(() => { if (!cancelled) { reportError("encoding"); setError("Cannot decode the file with this encoding. Try the encoding used by the source exporter."); } })
+      .catch(() => { if (!cancelled) { reportError("encoding"); setError("This file is not valid in the selected encoding. For older Excel exports, try Windows-1252 (Western Europe) or Windows-1250 (Central Europe), then check accented characters in the preview."); } })
       .finally(() => { if (!cancelled) setReading(false); });
     return () => { cancelled = true; };
   }, [files, options.encoding]);
@@ -102,7 +102,7 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
   };
   return (
     <Dialog open onOpenChange={open => { if (!open) cancel(); }}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto" onDragOver={e => e.stopPropagation()} onDrop={e => { e.preventDefault(); e.stopPropagation(); }}>
+      <DialogContent onPointerDownOutside={e => e.preventDefault()} className="max-h-[90vh] max-w-4xl overflow-y-auto" onDragOver={e => e.stopPropagation()} onDrop={e => { e.preventDefault(); e.stopPropagation(); }}>
         <DialogHeader>
           <DialogTitle>{files.length > 1 || baseTable ? "Preview and merge CSV files" : "Preview CSV import"}</DialogTitle>
           <DialogDescription>Files stay on this device. Check the columns and fix structural errors before importing. Changing encoding reloads the original files and resets preview corrections.</DialogDescription>
@@ -112,7 +112,7 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
             <option value="">Auto-detect</option><option value=",">Comma</option><option value=";">Semicolon</option><option value={"\t"}>Tab</option><option value="|">Pipe</option>
           </select></label>
           <label className="space-y-1 text-sm">Encoding<select className={fieldClass} value={options.encoding} onChange={e => update("encoding", e.target.value)}>
-            <option value="utf-8">UTF-8</option><option value="windows-1252">Windows-1252</option><option value="windows-1250">Windows-1250</option><option value="utf-16le">UTF-16 LE</option><option value="utf-16be">UTF-16 BE</option>
+            <option value="auto">Auto (UTF-8 / UTF-16 BOM)</option><option value="utf-8">UTF-8</option><option value="windows-1252">Windows-1252</option><option value="windows-1250">Windows-1250</option><option value="utf-16le">UTF-16 LE</option><option value="utf-16be">UTF-16 BE</option>
           </select></label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={options.header} onChange={e => update("header", e.target.checked)} />First record contains headers</label>
         </div>
@@ -120,7 +120,7 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
         {files.length > 1 && <p className="text-sm text-muted-foreground">Columns are matched by exact header name. All columns are kept; missing values become empty cells. Files are appended in the order below. The selected import settings apply to all files.</p>}
         <div className="flex flex-wrap gap-2">{files.map((file, i) => <Button key={i} size="sm" variant={selected === i ? "default" : "outline"} onClick={() => setSelected(i)} className="max-w-full truncate">{i + 1}. {file.name}</Button>)}</div>
         {busy && <p role="status" className="text-sm">{reading ? "Reading files…" : "Checking CSV records…"}</p>}
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {error && <div role="alert" className="space-y-2 text-sm"><p className="text-destructive">{error}</p>{!sources.length && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => update("encoding", "windows-1252")}>Try Windows-1252</Button><Button variant="outline" onClick={() => update("encoding", "windows-1250")}>Try Windows-1250</Button></div>}</div>}
         {result && !busy && <>
           <p className="text-sm">{result.recordCount} data records · {result.headers.length} columns · Separator: {result.delimiter === "\t" ? "tab" : result.delimiter} · {result.issueCount} record issues</p>
           <div className="max-h-60 overflow-auto rounded-md border">
@@ -129,6 +129,15 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
             </table>
           </div>
           {result.issueCount > 0 && <p className="text-sm text-destructive">Import is paused. The table shows valid records only; no invalid record will be silently dropped. Showing {result.issues.length} of {result.issueCount} issues. Fix these to reveal any remaining issues.</p>}
+          {result.headers.length === 1 && <p className="text-sm text-muted-foreground">Expected more columns? Change the delimiter above and check the preview.</p>}
+          {result.issues.some(issue => issue.kind === "short") && <div className="space-y-2 rounded-md border p-3 text-sm">
+            <p>Missing values at the end of records? Add empty trailing cells to {result.issues.filter(issue => issue.kind === "short").length} short records in this preview. Review the columns first: this cannot determine where a missing value belongs. No records are deleted.</p>
+            <Button variant="outline" onClick={() => {
+              const next = padShortRecords(sources[selected], result.issues);
+              track("record_corrected");
+              setResults([]); setSources(prev => prev.map((s, i) => i === selected ? next : s)); setRevision(r => r + 1);
+            }}>Fill trailing empty cells in preview</Button>
+          </div>}
           {result.issues.map(issue => <RecordRepair key={`${selected}-${revision}-${issue.start}`} issue={issue} onApply={value => {
             try {
               const next = replaceRecord(sources[selected], issue, value);
@@ -138,7 +147,8 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
           }} />)}
           {sources[selected] !== originals[selected] && <Button variant="outline" onClick={() => { setResults([]); setSources(prev => prev.map((s, i) => i === selected ? originals[i] : s)); setRevision(r => r + 1); }}>Reset corrections for this file</Button>}
         </>}
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background py-3">
+          {ready && <p role="status" className="mr-auto text-sm">Ready to import. All records passed the structure check.</p>}
           <Button variant="outline" onClick={cancel}>Cancel</Button>
           <Button disabled={!ready} onClick={() => {
             const tables = includeCurrent && baseTable ? [baseTable, ...results] : results;

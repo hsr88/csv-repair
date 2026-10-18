@@ -1,3 +1,4 @@
+import { repairTemplateValue } from "@/lib/csv-template-values";
 import { track, tableMetrics, durationMetrics } from "@/lib/analytics";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Papa from "papaparse";
@@ -1305,7 +1306,7 @@ const REPAIR_TEMPLATES: RepairTemplate[] = [
     apply: (data, headers) => {
       const seen = new Set<string>();
       const newData = data.filter((row) => {
-        const key = headers.map((h) => row[h] ?? "").join("\x00");
+        const key = JSON.stringify(headers.map((h) => row[h] ?? ""));
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -1316,28 +1317,17 @@ const REPAIR_TEMPLATES: RepairTemplate[] = [
   {
     id: "standardize-dates",
     name: "Standardize Dates",
-    description: "Convert detected date columns to YYYY-MM-DD format",
+    description: "Convert year-first dates to YYYY-MM-DD. Ambiguous day/month dates and timestamps stay unchanged.",
     icon: Calendar, color: "text-orange-400",
     apply: (data, headers) => {
       let changes = 0;
-      const dateHeaders = headers.filter((h) => detectColumnType(data, h).type === "date");
-      const newData = data.map((row) => {
-        const newRow = { ...row };
-        for (const h of dateHeaders) {
-          const v = (newRow[h] ?? "").trim();
-          if (!v) continue;
-          const d = new Date(v);
-          if (!isNaN(d.getTime())) {
-            const iso = d.toISOString().split("T")[0];
-            if (iso !== v) {
-              newRow[h] = iso;
-              changes++;
-            }
-          }
-        }
-        return newRow;
-      });
-      return { data: newData, headers, changes };
+      const updated = data.map(row => Object.fromEntries(headers.map(header => {
+        const original = row[header] ?? "";
+        const value = repairTemplateValue("standardize-dates", original);
+        if (value !== original) changes++;
+        return [header, value];
+      })));
+      return { data: updated, headers, changes };
     },
   },
   {
@@ -1347,45 +1337,29 @@ const REPAIR_TEMPLATES: RepairTemplate[] = [
     icon: Mail, color: "text-purple-400",
     apply: (data, headers) => {
       let changes = 0;
-      const emailHeaders = headers.filter((h) => detectColumnType(data, h).type === "email");
-      const newData = data.map((row) => {
-        const newRow = { ...row };
-        for (const h of emailHeaders) {
-          const v = (newRow[h] ?? "").trim();
-          if (v && v !== v.toLowerCase()) {
-            newRow[h] = v.toLowerCase();
-            changes++;
-          }
-        }
-        return newRow;
-      });
-      return { data: newData, headers, changes };
+      const updated = data.map(row => Object.fromEntries(headers.map(header => {
+        const original = row[header] ?? "";
+        const value = repairTemplateValue("lowercase-emails", original);
+        if (value !== original) changes++;
+        return [header, value];
+      })));
+      return { data: updated, headers, changes };
     },
   },
   {
     id: "normalize-phones",
     name: "Normalize Phone Numbers",
-    description: "Strip non-digit characters from phone number columns (keep leading +)",
+    description: "Remove formatting from phone-like values (keep leading +). Review the preview for numeric IDs.",
     icon: Phone, color: "text-green-400",
     apply: (data, headers) => {
       let changes = 0;
-      const phoneHeaders = headers.filter((h) => detectColumnType(data, h).type === "phone");
-      const newData = data.map((row) => {
-        const newRow = { ...row };
-        for (const h of phoneHeaders) {
-          const v = (newRow[h] ?? "").trim();
-          if (!v) continue;
-          const hasPlus = v.startsWith("+");
-          const digits = v.replace(/\D/g, "");
-          const normalized = (hasPlus ? "+" : "") + digits;
-          if (normalized !== v) {
-            newRow[h] = normalized;
-            changes++;
-          }
-        }
-        return newRow;
-      });
-      return { data: newData, headers, changes };
+      const updated = data.map(row => Object.fromEntries(headers.map(header => {
+        const original = row[header] ?? "";
+        const value = repairTemplateValue("normalize-phones", original);
+        if (value !== original) changes++;
+        return [header, value];
+      })));
+      return { data: updated, headers, changes };
     },
   },
   {
@@ -1426,25 +1400,17 @@ const REPAIR_TEMPLATES: RepairTemplate[] = [
   {
     id: "trim-urls",
     name: "Clean URLs",
-    description: "Remove trailing slashes and whitespace from URL columns",
+    description: "Remove trailing slashes and whitespace from HTTP(S) URLs",
     icon: Link2, color: "text-cyan-400",
     apply: (data, headers) => {
       let changes = 0;
-      const urlHeaders = headers.filter((h) => detectColumnType(data, h).type === "url");
-      const newData = data.map((row) => {
-        const newRow = { ...row };
-        for (const h of urlHeaders) {
-          const v = (newRow[h] ?? "").trim();
-          if (!v) continue;
-          const cleaned = v.replace(/\/+$/, "");
-          if (cleaned !== newRow[h]) {
-            newRow[h] = cleaned;
-            changes++;
-          }
-        }
-        return newRow;
-      });
-      return { data: newData, headers, changes };
+      const updated = data.map(row => Object.fromEntries(headers.map(header => {
+        const original = row[header] ?? "";
+        const value = repairTemplateValue("trim-urls", original);
+        if (value !== original) changes++;
+        return [header, value];
+      })));
+      return { data: updated, headers, changes };
     },
   },
 ];
@@ -1457,6 +1423,8 @@ function RepairTemplatesTab({
   onApplyTemplate: (templateId: string, result: { data: Record<string, string>[]; headers: string[]; changes: number }) => void;
 }) {
   const [lastApplied, setLastApplied] = useState<{ id: string; changes: number } | null>(null);
+  const [preview, setPreview] = useState<{ id: string; result: ReturnType<RepairTemplate["apply"]>; examples: string[] } | null>(null);
+  useEffect(() => { setPreview(null); }, [csvData.data, csvData.headers]);
 
   const columnTypes = useMemo(() => {
     return csvData.headers.map((h) => ({
@@ -1488,6 +1456,17 @@ function RepairTemplatesTab({
         </div>
       </div>
 
+      {preview && <div role="status" className="space-y-2 rounded-md border border-border p-3 text-sm">
+        <p>{REPAIR_TEMPLATES.find(t => t.id === preview.id)?.name}: {preview.result.changes} {preview.result.changes === 1 ? "change" : "changes"} found.</p>
+        {preview.result.changes === 0 && <p>No matching values need this repair. Mixed columns are checked cell by cell; ambiguous dates are left unchanged. Try another template or edit those values directly.</p>}
+        {preview.examples.map((example, i) => <p key={i} className="break-all font-mono text-xs">{example}</p>)}
+        <Button disabled={!preview.result.changes} onClick={() => {
+          setLastApplied({ id: preview.id, changes: preview.result.changes });
+          onApplyTemplate(preview.id, preview.result);
+          setPreview(null);
+        }}>Apply {preview.result.changes} {preview.result.changes === 1 ? "change" : "changes"}</Button>
+        <Button variant="ghost" onClick={() => setPreview(null)}>Dismiss preview</Button>
+      </div>}
       <div className="flex-1 overflow-auto space-y-2">
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Available Templates</h3>
         {REPAIR_TEMPLATES.map((tpl) => {
@@ -1513,12 +1492,16 @@ function RepairTemplatesTab({
                   variant="secondary"
                   onClick={() => {
                     const result = tpl.apply([...csvData.data.map((r) => ({ ...r }))], [...csvData.headers]);
-                    setLastApplied({ id: tpl.id, changes: result.changes });
-                    onApplyTemplate(tpl.id, result);
+                    const examples: string[] = [];
+                    if (result.data.length !== csvData.data.length) examples.push((csvData.data.length - result.data.length) + " rows will be removed. Undo is available after applying.");
+                    else for (let i = 0; i < result.data.length && examples.length < 3; i++) {
+                      for (const h of result.headers) if (result.data[i][h] !== csvData.data[i][h] && examples.length < 3) examples.push("Row " + (i + 1) + ", " + h + ": " + JSON.stringify(csvData.data[i][h]).slice(0, 160) + " → " + JSON.stringify(result.data[i][h]).slice(0, 160));
+                    }
+                    setPreview({ id: tpl.id, result, examples });
                   }}
                   data-testid={`button-apply-${tpl.id}`}
                 >
-                  Apply
+                  Preview
                 </Button>
               </div>
             </div>

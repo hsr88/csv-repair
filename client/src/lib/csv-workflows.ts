@@ -3,7 +3,11 @@ import Papa from "papaparse";
 export type CsvRow = Record<string, string>;
 export interface CsvTable { headers: string[]; data: CsvRow[] }
 export interface ImportOptions { delimiter: string; encoding: string; header: boolean }
-export const defaultImportOptions: ImportOptions = { delimiter: "", encoding: "utf-8", header: true };
+export const defaultImportOptions: ImportOptions = { delimiter: "", encoding: "auto", header: true };
+export function decodeCsv(bytes: Uint8Array, encoding: string): string {
+  const detected = bytes[0] === 0xff && bytes[1] === 0xfe ? "utf-16le" : bytes[0] === 0xfe && bytes[1] === 0xff ? "utf-16be" : "utf-8";
+  return new TextDecoder(encoding === "auto" ? detected : encoding, { fatal: true }).decode(bytes).replace(/^\uFEFF/, "");
+}
 export interface RecordIssue {
   record: number;
   start: number;
@@ -11,6 +15,7 @@ export interface RecordIssue {
   raw: string;
   message: string;
   suggestion: string;
+  kind?: "short" | "header";
 }
 export interface ImportResult extends CsvTable {
   delimiter: string;
@@ -28,6 +33,7 @@ export function parseImport(source: string, options: ImportOptions): ImportResul
   let cursor = 0;
   let record = 0;
   let issueCount = 0;
+  let invalidHeader = false;
   let delimiter = options.delimiter || Papa.parse(text, { preview: 10, skipEmptyLines: true }).meta.delimiter || ",";
   Papa.parse<string[]>(text, {
     delimiter,
@@ -51,22 +57,39 @@ export function parseImport(source: string, options: ImportOptions): ImportResul
       if (!isHeader && fields.length !== headers.length) {
         messages.push(`Expected ${headers.length} fields; found ${fields.length}. Check missing separators and unquoted delimiters.`);
       }
+      if (isHeader && messages.length) invalidHeader = true;
       if (messages.length) {
         issueCount++;
         if (issues.length < 100) {
-          const suggestion = !isHeader && !result.errors.length && fields.length < headers.length
+          const short = !isHeader && !result.errors.length && fields.length < headers.length;
+          const badHeader = isHeader && !result.errors.length;
+          const used = new Set(fields.filter(h => h.trim()));
+          const seen = new Set<string>();
+          const uniqueHeaders = fields.map((h, i) => {
+            if (h.trim() && !seen.has(h)) { seen.add(h); return h; }
+            const base = h.trim() ? h : `Column ${i + 1}`;
+            let name = base;
+            let suffix = 2;
+            while (used.has(name)) name = `${base} (${suffix++})`;
+            used.add(name); seen.add(name); return name;
+          });
+          const suggestion = short
             ? Papa.unparse([fields.concat(Array(headers.length - fields.length).fill(""))], { delimiter, quotes: true })
-            : raw.replace(/\r?\n$/, "");
-          issues.push({ record, start, end: cursor, raw, message: messages.join(" "), suggestion });
+            : badHeader ? Papa.unparse([uniqueHeaders], { delimiter, quotes: true }) : raw.replace(/\r?\n$/, "");
+          issues.push({ record, start, end: cursor, raw, message: messages.join(" "), suggestion, kind: short ? "short" : badHeader ? "header" : undefined });
         }
       }
-      if (!isHeader && !messages.length) {
+      if (!isHeader && !messages.length && !invalidHeader) {
         data.push(Object.fromEntries(headers.map((h, i) => [h, fields[i]])));
       }
     },
   });
   if (!record) throw new Error("This file has no CSV records.");
   return { headers, data, delimiter, issues, issueCount, recordCount: Math.max(0, record - (options.header ? 1 : 0)) };
+}
+
+export function padShortRecords(source: string, issues: RecordIssue[]): string {
+  return issues.filter(issue => issue.kind === "short").sort((a, b) => b.start - a.start).reduce((text, issue) => replaceRecord(text, issue, issue.suggestion), source);
 }
 
 export function replaceRecord(source: string, issue: RecordIssue, replacement: string): string {

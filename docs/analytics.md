@@ -61,3 +61,12 @@ Test UI: odmowa → import 3 rekordów → zmiana zgody bez utraty danych → SQ
 Historyczna walidacja wdrożenia 10.10: TypeScript, build i 20 testów zakończone powodzeniem. Na produkcji sprawdzono ówczesną blokadę tagu przed zgodą i po odmowie oraz import, automatyczną naprawę i eksport pliku testowego. W GA4 Realtime potwierdzono odbiór tool_opened, file_selected, import_completed, feature_used i export_created. Tag Assistant potwierdził tag G-R39FXG3NW8. Sesję diagnostyczną zakończono.
 
 Nowy raport szczegółowy może początkowo pokazywać zero, mimo obecności zdarzeń w Realtime: dane wymagają przetworzenia przez GA4. Wybierz zakres obejmujący 10.10.2026 lub późniejsze dni. Dzisiejsze dane obejmują również testy wdrożeniowe.
+
+## Import and template changes — 2026-10-18
+
+- Import now detects UTF-16 byte-order marks automatically, with strict UTF-8 as the default otherwise. Legacy encodings remain an explicit choice with preview; bytes are never silently replaced.
+- Duplicate/empty headers have a collision-safe rename suggestion. Data preview waits for a valid header. Short records can be padded at the end in batches of up to 100 displayed issues, after explicit confirmation; unresolved extra fields and quote errors still block import.
+- `record_corrected` counts correction actions, including one batch action, not the number of records changed.
+- Templates now preview before applying. Email, HTTP(S) URL, formatted-phone and year-first date repairs inspect individual cells instead of requiring 60% of a column to match. Dates with ambiguous day/month order and timestamps are preserved. Phone-like identifiers require user review in the preview.
+- `feature_used` / `template` records actual Apply actions. Zero-change previews cannot be applied and do not emit `feature_used`; compare this metric with pre-release data accordingly.
+- Validation: 29 automated tests, TypeScript check and production build; Chrome import → batch correction → email template preview/apply → undo/redo → downloaded CSV checked on disk. Also verified Windows-1252 recovery, duplicate/empty header repair and UTF-16 Polish text through the UI.
