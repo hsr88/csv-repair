@@ -1,8 +1,9 @@
+import { importErrorMessage, type ImportErrorReason } from "@/lib/csv-import-errors";
 import { track, fileMetrics, tableMetrics, durationMetrics } from "@/lib/analytics";
 import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { decodeCsv, padShortRecords, defaultImportOptions, mergeTables, replaceRecord, type CsvTable, type ImportOptions, type ImportResult, type RecordIssue } from "@/lib/csv-workflows";
+import { defaultImportOptions, type CsvTable, type ImportOptions, type ImportResult, type RecordIssue } from "@/lib/csv-workflows";
 
 const fieldClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
@@ -29,12 +30,15 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
   onImport: (table: CsvTable, delimiter: string, filename: string) => void;
 }) {
   const [options, setOptions] = useState<ImportOptions>(defaultImportOptions);
-  const [sources, setSources] = useState<string[]>([]);
-  const [originals, setOriginals] = useState<string[]>([]);
+  const [changed, setChanged] = useState<boolean[]>([]);
   const [results, setResults] = useState<ImportResult[]>([]);
   const [selected, setSelected] = useState(0);
-  const [reading, setReading] = useState(true);
-  const [parsing, setParsing] = useState(false);
+  const [busy, setBusy] = useState(true);
+  const [progress, setProgress] = useState({ phase: "reading", index: 0, percent: 0, records: 0 });
+  const [reason, setReason] = useState<ImportErrorReason | "">("");
+  const workerRef = useRef<Worker | null>(null);
+  const completion = useRef(onImport);
+  completion.current = onImport;
   const [error, setError] = useState("");
   const [includeCurrent, setIncludeCurrent] = useState(!!baseTable);
   const [revision, setRevision] = useState(0);
@@ -42,10 +46,10 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
   const reportedErrors = useRef(new Set<string>());
   const selectedOnce = useRef(false);
   const finished = useRef(false);
-  const reportError = (category: "encoding" | "structure" | "parser") => {
-    if (reportedErrors.current.has(category)) return;
-    reportedErrors.current.add(category);
-    track("import_error", { error_category: category, ...fileMetrics(files) });
+  const reportError = (category: "encoding" | "structure" | "parser", error_reason: ImportErrorReason) => {
+    if (reportedErrors.current.has(error_reason)) return;
+    reportedErrors.current.add(error_reason);
+    track("import_error", { error_category: category, error_reason, ...fileMetrics(files) });
   };
   const cancel = () => {
     if (!finished.current) {
@@ -58,47 +62,57 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
     if (!selectedOnce.current) { selectedOnce.current = true; track("file_selected", fileMetrics(files)); }
   }, [files]);
 
+  const fail = (failure: ImportErrorReason, index = 0) => {
+    setBusy(false); setReason(failure); setSelected(index);
+    setError(importErrorMessage(failure));
+    reportError(failure === "decode" ? "encoding" : "parser", failure);
+  };
+  const createWorker = (settings: ImportOptions) => {
+    workerRef.current?.terminate();
+    try {
+      const worker = new Worker(new URL("../lib/csv-import.worker.ts", import.meta.url), { type: "module" });
+      workerRef.current = worker;
+      worker.onmessage = ({ data }) => {
+        if (workerRef.current !== worker || finished.current) return;
+        if (data.type === "progress") setProgress(data);
+        else if (data.type === "preview") {
+          setResults(data.results); setChanged(data.changed); setBusy(false); setRevision(r => r + 1);
+          if (data.results.some((r: ImportResult) => r.issueCount > 0)) reportError("structure", "record_structure");
+        } else if (data.type === "error") fail(data.reason, data.index);
+        else if (data.type === "complete") {
+          const table: CsvTable = data.table;
+          completion.current(table, data.delimiter, data.merged ? "merged.csv" : files[0].name);
+          finished.current = true;
+          track("import_completed", { ...fileMetrics(files), ...tableMetrics(table.data.length, table.headers.length), ...durationMetrics(performance.now() - startedAt.current) });
+          if (data.merged) track("feature_used", { feature: "merge", outcome: "success", ...tableMetrics(table.data.length, table.headers.length) });
+          worker.terminate(); workerRef.current = null;
+        }
+      };
+      worker.onerror = () => { if (workerRef.current === worker) { worker.terminate(); workerRef.current = null; fail("worker_failed"); } };
+      worker.onmessageerror = () => { if (workerRef.current === worker) { worker.terminate(); workerRef.current = null; fail("transfer_failed"); } };
+      worker.postMessage({ type: "load", files, options: settings });
+    } catch { workerRef.current?.terminate(); workerRef.current = null; fail("worker_failed"); }
+  };
+  const request = (command: object) => {
+    setBusy(true); setError(""); setReason("");
+    setProgress({ phase: "parsing", index: selected, percent: 0, records: 0 });
+    try { if (!workerRef.current) throw new Error(); workerRef.current.postMessage(command); }
+    catch { fail("transfer_failed"); }
+  };
   useEffect(() => {
-    let cancelled = false;
-    setReading(true); setError(""); setResults([]); setSources([]);
-    Promise.all(files.map(async file => decodeCsv(new Uint8Array(await file.arrayBuffer()), options.encoding)))
-      .then(texts => { if (!cancelled) { setSources(texts); setOriginals(texts); setRevision(r => r + 1); } })
-      .catch(() => { if (!cancelled) { reportError("encoding"); setError("This file is not valid in the selected encoding. For older Excel exports, try Windows-1252 (Western Europe) or Windows-1250 (Central Europe), then check accented characters in the preview."); } })
-      .finally(() => { if (!cancelled) setReading(false); });
-    return () => { cancelled = true; };
-  }, [files, options.encoding]);
+    createWorker(defaultImportOptions);
+    return () => { workerRef.current?.terminate(); workerRef.current = null; };
+  }, [files]);
 
-  useEffect(() => {
-    if (!sources.length) { setParsing(false); return; }
-    let cancelled = false;
-    let worker: Worker | undefined;
-    setParsing(true); setResults([]); setError("");
-    const run = async () => {
-      const parsed: ImportResult[] = [];
-      for (const text of sources) {
-        const result = await new Promise<ImportResult>((resolve, reject) => {
-          worker = new Worker(new URL("../lib/csv-import.worker.ts", import.meta.url), { type: "module" });
-          worker.onmessage = ({ data }) => { worker?.terminate(); data.error ? reject(new Error(data.error)) : resolve(data.result); };
-          worker.onerror = () => { worker?.terminate(); reject(new Error("CSV parsing failed. Try a smaller file or check the source format.")); };
-          worker.postMessage({ text, options });
-        });
-        if (cancelled) return;
-        parsed.push(result);
-      }
-      if (!cancelled) { setResults(parsed); if (parsed.some(r => r.issueCount > 0)) reportError("structure"); }
-    };
-    run().catch(e => { if (!cancelled) { reportError("parser"); setError(e.message); } }).finally(() => { if (!cancelled) setParsing(false); });
-    return () => { cancelled = true; worker?.terminate(); };
-  }, [sources, options.delimiter, options.header, options.encoding]);
-
-  const busy = reading || parsing;
   const result = results[selected];
   const ready = !busy && !error && results.length === files.length && results.every(r => r.issueCount === 0);
   const issueCount = results.reduce((count, r) => count + r.issueCount, 0);
   const update = (key: keyof ImportOptions, value: string | boolean) => {
-    setResults([]);
-    setRevision(r => r + 1);
-    setOptions(prev => ({ ...prev, [key]: value }));
+    const next = { ...options, [key]: value };
+    setOptions(next); setResults([]);
+    if (key === "encoding" || !workerRef.current || reason === "decode" || reason === "file_read") {
+      setBusy(true); setError(""); setReason(""); setChanged([]); createWorker(next);
+    } else request({ type: "parse", options: next });
   };
   return (
     <Dialog open onOpenChange={open => { if (!open) cancel(); }}>
@@ -108,20 +122,24 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
           <DialogDescription>Files stay on this device. Check the columns and fix structural errors before importing. Changing encoding reloads the original files and resets preview corrections.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="space-y-1 text-sm">Delimiter<select className={fieldClass} value={options.delimiter} onChange={e => update("delimiter", e.target.value)}>
+          <label className="space-y-1 text-sm">Delimiter<select disabled={busy} className={fieldClass} value={options.delimiter} onChange={e => update("delimiter", e.target.value)}>
             <option value="">Auto-detect</option><option value=",">Comma</option><option value=";">Semicolon</option><option value={"\t"}>Tab</option><option value="|">Pipe</option>
           </select></label>
-          <label className="space-y-1 text-sm">Encoding<select className={fieldClass} value={options.encoding} onChange={e => update("encoding", e.target.value)}>
+          <label className="space-y-1 text-sm">Encoding<select disabled={busy} className={fieldClass} value={options.encoding} onChange={e => update("encoding", e.target.value)}>
             <option value="auto">Auto (UTF-8 / UTF-16 BOM)</option><option value="utf-8">UTF-8</option><option value="windows-1252">Windows-1252</option><option value="windows-1250">Windows-1250</option><option value="utf-16le">UTF-16 LE</option><option value="utf-16be">UTF-16 BE</option>
           </select></label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={options.header} onChange={e => update("header", e.target.checked)} />First record contains headers</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={busy} checked={options.header} onChange={e => update("header", e.target.checked)} />First record contains headers</label>
         </div>
         {baseTable && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={includeCurrent} onChange={e => setIncludeCurrent(e.target.checked)} />Include current editor data ({baseTable.data.length} rows)</label>}
         {files.length > 1 && <p className="text-sm text-muted-foreground">Columns are matched by exact header name. All columns are kept; missing values become empty cells. Files are appended in the order below. The selected import settings apply to all files.</p>}
         <div className="flex flex-wrap gap-2">{files.map((file, i) => <Button key={i} size="sm" variant={selected === i ? "default" : "outline"} onClick={() => setSelected(i)} className="max-w-full truncate">{i + 1}. {file.name}</Button>)}</div>
-        {busy && <p role="status" className="text-sm">{reading ? "Reading files…" : "Checking CSV records…"}</p>}
-        {error && <div role="alert" className="space-y-2 text-sm"><p className="text-destructive">{error}</p>{!sources.length && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => update("encoding", "windows-1252")}>Try Windows-1252</Button><Button variant="outline" onClick={() => update("encoding", "windows-1250")}>Try Windows-1250</Button></div>}</div>}
-        {result && !busy && <>
+        {busy && <div role="status" className="space-y-2 text-sm">
+          <p>{progress.phase === "reading" ? "Reading" : progress.phase === "decoding" ? "Decoding" : progress.phase === "transferring" ? "Opening in editor" : "Checking records"} · file {progress.index + 1} of {files.length}{progress.phase === "parsing" ? " · " + progress.percent + "% · " + progress.records.toLocaleString() + " records checked" : ""}</p>
+          {progress.phase === "parsing" && <progress aria-label="CSV records checked" value={progress.percent} max={100} className="h-2 w-full" />}
+          <p className="text-muted-foreground">Large files can take longer and need more memory than their file size. You can cancel at any time; your current editor data stays intact.</p>
+        </div>}
+        {error && <div role="alert" className="space-y-2 text-sm"><p className="text-destructive">{error}</p>{reason === "decode" && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => update("encoding", "windows-1252")}>Try Windows-1252</Button><Button variant="outline" onClick={() => update("encoding", "windows-1250")}>Try Windows-1250</Button></div>}<Button variant="outline" onClick={() => { if (!workerRef.current || reason === "decode" || reason === "file_read") { setBusy(true); setError(""); setReason(""); createWorker(options); } else request({ type: "parse", options }); }}>Retry with current settings</Button><p className="text-muted-foreground">{workerRef.current ? "Preview corrections are kept when retrying. Changing encoding reloads the original file." : "The worker stopped. Retrying reloads the original files with your current settings; preview corrections must be applied again."}</p></div>}
+        {result && !busy && !error && <>
           <p className="text-sm">{result.recordCount} data records · {result.headers.length} columns · Separator: {result.delimiter === "\t" ? "tab" : result.delimiter} · {result.issueCount} record issues</p>
           <div className="max-h-60 overflow-auto rounded-md border">
             <table className="w-full text-sm"><thead><tr>{result.headers.map((h, i) => <th key={i} className="border-b bg-muted px-3 py-2 text-left">{h || "(empty header)"}</th>)}</tr></thead>
@@ -133,31 +151,22 @@ export function CsvImportDialog({ files, baseTable, onClose, onImport }: {
           {result.issues.some(issue => issue.kind === "short") && <div className="space-y-2 rounded-md border p-3 text-sm">
             <p>Missing values at the end of records? Add empty trailing cells to {result.issues.filter(issue => issue.kind === "short").length} short records in this preview. Review the columns first: this cannot determine where a missing value belongs. No records are deleted.</p>
             <Button variant="outline" onClick={() => {
-              const next = padShortRecords(sources[selected], result.issues);
               track("record_corrected");
-              setResults([]); setSources(prev => prev.map((s, i) => i === selected ? next : s)); setRevision(r => r + 1);
+              request({ type: "pad", index: selected });
             }}>Fill trailing empty cells in preview</Button>
           </div>}
           {result.issues.map(issue => <RecordRepair key={`${selected}-${revision}-${issue.start}`} issue={issue} onApply={value => {
-            try {
-              const next = replaceRecord(sources[selected], issue, value);
-              track("record_corrected");
-              setResults([]); setSources(prev => prev.map((s, i) => i === selected ? next : s)); setRevision(r => r + 1);
-            } catch (e) { setError((e as Error).message); }
+            track("record_corrected");
+            request({ type: "correct", index: selected, issue, value });
           }} />)}
-          {sources[selected] !== originals[selected] && <Button variant="outline" onClick={() => { setResults([]); setSources(prev => prev.map((s, i) => i === selected ? originals[i] : s)); setRevision(r => r + 1); }}>Reset corrections for this file</Button>}
+          {changed[selected] && <Button variant="outline" onClick={() => request({ type: "reset", index: selected })}>Reset corrections for this file</Button>}
         </>}
         <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background py-3">
           {ready && <p role="status" className="mr-auto text-sm">Ready to import. All records passed the structure check.</p>}
           <Button variant="outline" onClick={cancel}>Cancel</Button>
           <Button disabled={!ready} onClick={() => {
-            const tables = includeCurrent && baseTable ? [baseTable, ...results] : results;
-            const merged = tables.length > 1;
-            const table = merged ? mergeTables(tables) : results[0];
-            onImport(table, results[0].delimiter, merged ? "merged.csv" : files[0].name);
-            finished.current = true;
-            track("import_completed", { ...fileMetrics(files), ...tableMetrics(table.data.length, table.headers.length), ...durationMetrics(performance.now() - startedAt.current) });
-            if (merged) track("feature_used", { feature: "merge", outcome: "success", ...tableMetrics(table.data.length, table.headers.length) });
+            request({ type: "commit", base: includeCurrent ? baseTable : undefined });
+            setProgress({ phase: "transferring", index: 0, percent: 100, records: 0 });
           }}>{issueCount ? `Resolve ${issueCount} issues to import` : files.length > 1 || includeCurrent ? "Merge into editor" : "Import into editor"}</Button>
         </div>
       </DialogContent>

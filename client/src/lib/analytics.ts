@@ -1,10 +1,12 @@
 export const MEASUREMENT_ID = "G-R39FXG3NW8";
 export const CONSENT_KEY = "csv-analytics-consent-v2";
 type Consent = "accepted" | "declined";
-const events = ["tool_opened", "file_selected", "import_completed", "import_error", "import_cancelled", "record_corrected", "feature_used", "export_created"] as const;
+const events = ["tool_opened", "file_selected", "import_completed", "import_error", "import_cancelled", "record_corrected", "feature_used", "export_created", "template_previewed"] as const;
 type EventName = typeof events[number];
 const allowed = {
   feature: ["cell_edit", "structure_edit", "replace", "auto_repair", "template", "sql", "merge", "split", "recipe_save", "recipe_apply"],
+  template_id: ["trim-whitespace", "remove-empty-rows", "remove-duplicate-rows", "standardize-dates", "lowercase-emails", "normalize-phones", "fix-encoding", "trim-urls"],
+  error_reason: ["file_read", "decode", "empty_file", "record_structure", "resource_limit", "parse_exception", "worker_failed", "transfer_failed"],
   outcome: ["success", "error", "no_changes"],
   export_type: ["editor", "sql", "split"],
   error_category: ["encoding", "structure", "parser"],
@@ -14,6 +16,7 @@ const allowed = {
   file_count: ["1", "2_5", "6_plus"],
   duration_bucket: ["under_1s", "1_5s", "5_30s", "30s_plus"],
 } as const;
+export type TemplateId = typeof allowed.template_id[number];
 type Params = Partial<{ [K in keyof typeof allowed]: typeof allowed[K][number] }>;
 let consent: Consent | null = null;
 let started = false;

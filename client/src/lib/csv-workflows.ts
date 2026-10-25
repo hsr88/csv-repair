@@ -24,7 +24,7 @@ export interface ImportResult extends CsvTable {
   recordCount: number;
 }
 
-export function parseImport(source: string, options: ImportOptions): ImportResult {
+export function parseImport(source: string, options: ImportOptions, onProgress?: (percent: number, records: number) => void): ImportResult {
   // Papa strips the BOM. Keep offsets relative to the same normalized source.
   const text = source.replace(/^\uFEFF/, "");
   const data: CsvRow[] = [];
@@ -44,6 +44,7 @@ export function parseImport(source: string, options: ImportOptions): ImportResul
       const raw = text.slice(start, cursor);
       if (!raw || /^\s*$/.test(raw)) return;
       record++;
+      if (record % 10000 === 0) onProgress?.(Math.min(99, Math.floor(cursor / text.length * 100)), record);
       delimiter = result.meta.delimiter;
       const fields = result.data;
       const messages = result.errors.filter(e => e.code !== "UndetectableDelimiter").map(e => e.message);
@@ -85,6 +86,7 @@ export function parseImport(source: string, options: ImportOptions): ImportResul
     },
   });
   if (!record) throw new Error("This file has no CSV records.");
+  onProgress?.(100, record);
   return { headers, data, delimiter, issues, issueCount, recordCount: Math.max(0, record - (options.header ? 1 : 0)) };
 }
 

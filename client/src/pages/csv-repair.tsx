@@ -1,5 +1,5 @@
 import { repairTemplateValue } from "@/lib/csv-template-values";
-import { track, tableMetrics, durationMetrics } from "@/lib/analytics";
+import { track, tableMetrics, durationMetrics, type TemplateId } from "@/lib/analytics";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Papa from "papaparse";
 import {
@@ -956,7 +956,7 @@ function DataEditorTab({
   highlightCells: Map<string, boolean>;
 }) {
   return (
-    <div className="flex flex-col h-full gap-2 sm:gap-3 p-2 sm:p-4 relative" data-testid="tab-editor">
+    <div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-3 p-2 sm:p-4 relative" data-testid="tab-editor">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 sm:gap-3">
           <h2 className="text-sm font-semibold text-foreground">Data Editor</h2>
@@ -1259,7 +1259,7 @@ function ChartsTab({ csvData }: { csvData: ParsedCSV }) {
 }
 
 interface RepairTemplate {
-  id: string;
+  id: TemplateId;
   name: string;
   description: string;
   icon: typeof Wrench;
@@ -1415,15 +1415,27 @@ const REPAIR_TEMPLATES: RepairTemplate[] = [
   },
 ];
 
+function SuggestedRepairs({ table, onOpen }: { table: ParsedCSV; onOpen: () => void }) {
+  const suggestions = useMemo(() => {
+    const sample = table.data.slice(0, 500);
+    return REPAIR_TEMPLATES.filter(t => t.apply(sample, table.headers).changes > 0).slice(0, 3);
+  }, [table.data, table.headers]);
+  if (!suggestions.length) return null;
+  return <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-xs" role="status">
+    <span>Possible repairs in the first {Math.min(table.data.length, 500)} rows: {suggestions.map(t => t.name).join(", ")}.</span>
+    <Button size="sm" variant="secondary" onClick={onOpen}>Preview repairs</Button>
+  </div>;
+}
+
 function RepairTemplatesTab({
   csvData,
   onApplyTemplate,
 }: {
   csvData: ParsedCSV;
-  onApplyTemplate: (templateId: string, result: { data: Record<string, string>[]; headers: string[]; changes: number }) => void;
+  onApplyTemplate: (templateId: TemplateId, result: { data: Record<string, string>[]; headers: string[]; changes: number }) => void;
 }) {
   const [lastApplied, setLastApplied] = useState<{ id: string; changes: number } | null>(null);
-  const [preview, setPreview] = useState<{ id: string; result: ReturnType<RepairTemplate["apply"]>; examples: string[] } | null>(null);
+  const [preview, setPreview] = useState<{ id: TemplateId; result: ReturnType<RepairTemplate["apply"]>; examples: string[] } | null>(null);
   useEffect(() => { setPreview(null); }, [csvData.data, csvData.headers]);
 
   const columnTypes = useMemo(() => {
@@ -1491,7 +1503,8 @@ function RepairTemplatesTab({
                   size="sm"
                   variant="secondary"
                   onClick={() => {
-                    const result = tpl.apply([...csvData.data.map((r) => ({ ...r }))], [...csvData.headers]);
+                    const result = tpl.apply(csvData.data, csvData.headers);
+                    track("template_previewed", { template_id: tpl.id, outcome: result.changes ? "success" : "no_changes" });
                     const examples: string[] = [];
                     if (result.data.length !== csvData.data.length) examples.push((csvData.data.length - result.data.length) + " rows will be removed. Undo is available after applying.");
                     else for (let i = 0; i < result.data.length && examples.length < 3; i++) {
@@ -1988,9 +2001,9 @@ export default function CsvRepairPage() {
   );
 
   const handleApplyTemplate = useCallback(
-    (templateId: string, result: { data: Record<string, string>[]; headers: string[]; changes: number }) => {
+    (templateId: TemplateId, result: { data: Record<string, string>[]; headers: string[]; changes: number }) => {
       if (!csvData) return;
-      track("feature_used", { feature: "template", outcome: result.changes === 0 ? "no_changes" : "success" });
+      track("feature_used", { feature: "template", template_id: templateId, outcome: result.changes === 0 ? "no_changes" : "success" });
       if (result.changes === 0) {
         toast({ title: "No Changes", description: "This template found nothing to fix." });
         return;
@@ -2438,7 +2451,8 @@ export default function CsvRepairPage() {
           </nav>
         )}
 
-        <main className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
+        <main className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden relative">
+          {csvData && activeTab === "editor" && <SuggestedRepairs table={csvData} onOpen={() => setActiveTab("templates")} />}
           {activeTab === "files" ? (
             <CsvFileTools table={csvData ?? undefined} filename={csvData?.fileName} onMerge={files => setPendingImport({ files, merge: true })} />
           ) : !csvData ? (

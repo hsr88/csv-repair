@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const ts = require('typescript');
 const valueSource = fs.readFileSync('client/src/lib/csv-template-values.ts', 'utf8').replace('export function', 'function');
 const page = fs.readFileSync('client/src/pages/csv-repair.tsx', 'utf8');
-const definitions = page.slice(page.indexOf('interface RepairTemplate'), page.indexOf('function RepairTemplatesTab'));
+const definitions = page.slice(page.indexOf('interface RepairTemplate'), page.indexOf('function SuggestedRepairs'));
 const source = valueSource + '\nconst Type=0,Trash2=0,Columns=0,Calendar=0,Mail=0,Phone=0,Zap=0,Link2=0;\n' + definitions + '\nmodule.exports = REPAIR_TEMPLATES;';
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const loaded = { exports: {} };

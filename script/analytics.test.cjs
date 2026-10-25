@@ -58,3 +58,9 @@ test('safe size and row buckets at boundaries',()=>{
 test('tag failures never interrupt product operations',()=>{
  const e=setup();e.a.initAnalytics();e.a.setConsent('accepted');e.window.gtag=()=>{throw Error('blocked')};assert.doesNotThrow(()=>e.a.track('export_created'));
 });
+test('template previews and import reasons accept only fixed identifiers',()=>{
+ const e=setup();e.a.initAnalytics();e.a.track('template_previewed',{template_id:'lowercase-emails',outcome:'success'});
+ assert.equal(e.calls().at(-1)[2].template_id,'lowercase-emails');
+ e.a.track('import_error',{error_reason:'decode',file_name:'private.csv'});assert.equal(e.calls().at(-1)[2].error_reason,'decode');assert.ok(!JSON.stringify(e.calls()).includes('private.csv'));
+ e.a.track('template_previewed',{template_id:'private template',error_reason:'private error'});assert.ok(!JSON.stringify(e.calls()).includes('private template'));assert.ok(!JSON.stringify(e.calls()).includes('private error'));
+});
